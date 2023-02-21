@@ -1,0 +1,97 @@
+---
+title: 'CAGE: PCA of a Subset of the Data'
+author: "John Thompson"
+date: "2023-02-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+
+home <- "C:/Projects/RCourse/Masterclass/CAGE"
+
+validDF <- readRDS( file.path(home, "data/rData/validation.rds"))
+trainDF <- readRDS( file.path(home, "data/rData/training.rds"))
+subjDF  <- readRDS( file.path(home, "data/rData/subjects.rds"))
+pca     <- readRDS( file.path(home, "data/rData/subset_pca.rds"))
+scoreTrainDF <- readRDS(file.path(home, "data/rData/subset_train_pca_scores.rds"))
+scoreValidDF <- readRDS(file.path(home, "data/rData/subset_valid_pca_scores.rds"))
+
+knitr::opts_chunk$set(echo = FALSE, fig.align = "center",
+                      message=FALSE)
+```
+
+## CAGE
+
+CAGE (Classification After Gene Expression) explores ways of selecting features from a gene expression study for patient classification. In particular, it investigates the pros and cons of basing the classification on the principal components of the gene expression.
+
+## Subset of the Data
+
+A random sample of 1000 probes was used to create a subset of the data that would enable quicker development of the code to investigate feature selection. The training data consist of the 1000 probes measured on the subjects from AEGIS-1 and the validation data consist of the same probes measured on the subjects from AEGIS-2.
+
+This report looks at the principal component analysis (PCA) of the training data.
+
+## Principal Components
+
+Figure 1 shows the percentage of the variance captured by each of the principal components.
+
+```{r}
+tibble( pc = 1:375,
+        sd = pca$sdev) %>%
+  mutate( pct = 100 * sd * sd / sum(sd * sd)) %>%
+  ggplot( aes(x = pc, y = pct, xend = pc, yend = 0)) +
+  geom_segment() +
+  labs( title = "Standard deviatons of the Principal Components",
+        y     = "Percent Variance",
+        x     = "Principal Component Number")
+```
+
+A table of the cumulative percentage of the variance explained by the first 20 PCs shows that just 3 principal components captures over 50% of the variance in the expressions.
+```{r}
+tibble( pc = 1:375,
+        sd = pca$sdev) %>%
+  mutate( var = sd * sd,
+          pct = round(100 * var / sum(var), 1),
+          var = round(var, 1),
+          cumpct = cumsum(pct)) %>%
+  select( pc, var, pct, cumpct) %>%
+  slice(1:20) %>%
+  print()
+  
+```
+
+Figure 2 shows the principal component scores of the subjects in the training data (AEGIS-1) for the first 5 PCs separated by diagnosis.
+
+```{r}
+scoreTrainDF %>%
+  select( id, PC1:PC5) %>%
+  pivot_longer(starts_with("PC"), names_to = "PC", 
+               values_to = "score") %>%
+  left_join( subjDF %>% 
+               select(id, diagnosis), by = "id") %>%
+  ggplot( aes(x = PC, y = score, fill = diagnosis)) +
+  geom_boxplot() +
+  labs(title = "Training data: PCA Scores 1 to 5 by diagnosis",
+       y     = "Score",
+       x     = "Principal Component") +
+  theme( legend.position = c(.85, .85))
+```
+
+Figure 3 shows the principal component scores of the subjects in the validation data (AEGIS-2) for the first 5 PCs as derived from the training data.
+
+```{r}
+scoreValidDF %>%
+  select( id, PC1:PC5) %>%
+  pivot_longer(starts_with("PC"), names_to = "PC", 
+               values_to = "score") %>%
+  left_join( subjDF %>% 
+               select(id, diagnosis), by = "id") %>%
+  ggplot( aes(x = PC, y = score, fill = diagnosis)) +
+  geom_boxplot() +
+  labs(title = "Validation data: PCA Scores 1 to 5 by diagnosis",
+       y     = "Score",
+       x     = "Principal Component") +
+  theme( legend.position = c(.85, .85))
+
+```
+

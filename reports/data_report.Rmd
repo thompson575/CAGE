@@ -1,0 +1,123 @@
+---
+title: 'CAGE: Summary of the Raw Data'
+author: "John Thompson"
+date: "2023-02-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+
+home <- "C:/Projects/RCourse/Masterclass/CAGE"
+
+readRDS( file.path(home, "data/rData/subjects.rds") ) -> subjDF
+
+readRDS( file.path(home, "data/rData/expression.rds") ) -> geDF
+
+
+knitr::opts_chunk$set(echo = FALSE, fig.align = "center",
+                      message=FALSE)
+```
+
+## CAGE
+
+CAGE (Classification After Gene Expression) explores ways of selecting features from a gene expression study for patient classification. In particular, it investigates the pros and cons of basing the classification on the principal components of the gene expression.
+
+## Data Source
+
+The gene expression study used in the project comes from,
+
+Xu K, Shi X, Husted C, Hong R et al.  
+**Smoking modulates different secretory subpopulations expressing SARS-CoV-2 entry genes in the nasal and bronchial airways.**  
+Sci Rep 2022 Oct 28;12(1):18168. 
+
+The authors made their data available on the GEO archive as GSE210271. The CAGE analysis is based on the Series Matrix File downloaded from <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE210271>.  
+
+In Xu et al's study mRNA gene expression from 505 nasal epithelial brushings was profiled using Affymetrix Gene 1.0 ST microarrays. Samples were collected from patients in the Airway Epithelial Gene Expression in the Diagnosis of Lung Cancer (AEGIS) trials (AEGIS-1 and AEGIS-2), two independent, prospective, multicenter, observational studies. 375 nasal samples (243 with lung cancer, 132 with benign lung disease) were patients in the AEGIS-1 trial and 130 nasal samples (66 with lung cancer, 64 with benign lung disease) were from patients in the AEGIS-2 trial.  
+
+## Patient Characteristics
+
+```{r}
+subjDF %>%
+  group_by(study, diagnosis) %>%
+  count() %>%
+  pull(n) -> n
+```
+
+Figure 1 shows that there were more cancer cases in AEGIS-1 (`r n[2]` vs `r n[1]`) but almost equal numbers of cancer and benign cases in AEGIS-2 (`r n[4]` vs `r n[3]`). 
+```{r}
+subjDF %>%
+  ggplot( aes( x= study, fill = diagnosis)) +
+  geom_bar( position = "dodge") +
+  labs( title = "Fig 1: Numbers of cancer and benign cases in each study")
+```
+
+Figure 2 shows that there were rough;y twice as many women as men in both studies and both diagnostic groups.
+```{r}
+subjDF %>%
+  ggplot( aes( x= study, fill = diagnosis)) +
+  geom_bar( position = "dodge") +
+  facet_grid( sex ~ . ) +
+  labs( title = "Fig 2: Gender by diagnosis and study")
+```
+
+```{r}
+subjDF %>%
+  group_by(study, diagnosis) %>%
+  summarise( a = round(mean(age),1) ) %>%
+  pull(a) -> a
+```
+Figure 3 shows a boxplot of the ages of the patients. The mean ages in AEGIS-1 were cancer `r a[2]` and benign `r a[1]` while in AEGIS-2 the corresponding mean ages were `r a[4]` and `r a[3]`.
+
+```{r}
+subjDF %>%
+  ggplot( aes( x= study, y = age, fill = diagnosis )) +
+  geom_boxplot() +
+  labs( title = "Fig 3: Cancer cases tended to be slightly older")
+```
+
+Figure 4 shoes that there were more former smokers than current smokers in both studies, however, there is no information on how long it was since they gave up.
+
+
+```{r}
+subjDF %>%
+  ggplot( aes( x= study, fill = diagnosis)) +
+  geom_bar( position = "dodge") +
+  facet_grid( smoking ~ . ) +
+  labs( title = "Fig 4: Smoking status by diagnosis and study")
+```
+
+## Gene Expression
+
+Expression levels were measured for `r nrow(geDF)` probes.
+
+The gene expression values have been normalized as is demonstrated by the boxplots in figure 5, which show that the distribution of expressions is similar for each of the first 5 patients.
+
+```{r}
+geDF %>%
+  select(1:6) %>%
+  mutate( ID_REF = str_replace(ID_REF, "ENSG00000000", "")) %>%
+  pivot_longer(-ID_REF, names_to="id", values_to="ge") %>%
+  left_join(subjDF, by = "id") %>%
+  mutate( study = factor(study)) %>%
+  ggplot( aes(x=id, y=ge)) +
+  geom_boxplot(fill= "#00BFC4" ) +
+  labs( title = "Fig 5: Distribution of expression levels for the first 5 patients",
+        y = "Normalized Expression",
+        x = "")
+```
+
+The expression levels for the first 5 probes are shown in figure 6 and illustrate the small differences that might help classify the type of lung disease.
+
+```{r}
+geDF %>%
+  slice(1:5) %>%
+  mutate( ID_REF = str_replace(ID_REF, "ENSG00000000", "")) %>%
+  pivot_longer(-ID_REF, names_to="id", values_to="ge") %>%
+  left_join(subjDF, by = "id") %>%
+  mutate( study = factor(study)) %>%
+  ggplot( aes(x=ID_REF, y=ge, fill=diagnosis)) +
+  geom_boxplot() +
+  labs( title = "Fig 6: Expression levels for the first 5 probes",
+        y = "Normalized Expression")
+```

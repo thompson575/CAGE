@@ -1,0 +1,100 @@
+---
+title: 'CAGE: Cross-validation'
+author: "John Thompson"
+date: "2023-02-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+
+source("C:/Projects/RCourse/Masterclass/CAGE/code/CAGE_functions.R")
+home <- "C:/Projects/RCourse/Masterclass/CAGE"
+
+readRDS(file.path(home, "data/dataStore/cv_10_probe.rds")) -> cv10Probe
+
+readRDS(file.path(home, "data/dataStore/cv_10_pcSel.rds")) -> cv10PcSel
+
+readRDS(file.path(home, "data/dataStore/cv_10_pcOrd.rds")) -> cv10PcOrd
+
+readRDS(file.path(home, "data/dataStore/cv_loo_probe.rds")) -> cvLooProbe
+
+readRDS(file.path(home, "data/dataStore/cv_loo_pcSel.rds")) -> cvLooPcSel
+
+readRDS(file.path(home, "data/dataStore/cv_loo_pcOrd.rds")) -> cvLooPcOrd
+
+knitr::opts_chunk$set(echo = FALSE, fig.align = "center",
+                      message=FALSE)
+```
+
+## CAGE
+
+CAGE (Classification After Gene Expression) explores ways of selecting features from a gene expression study for patient classification. In particular, it investigates the pros and cons of basing the classification on the principal components of the gene expression.
+
+## Cross-validation
+
+Using the random sample of 1000 probes cross-validation was run on the training data (AEGIS-1) to assess how many features should be used.
+
+The Cross-Entropy loss is used to compare models. It takes the form,
+\[
+- \frac{1}{N} \sum_{i=1}^N y_i log(\hat{y}_i) + (1-y_i) log(1-\hat{y}_i)
+\]
+where N is the number of subjects, $y_i$ is 0 for benign cases and 1 for cancer cases and $\hat{y}_i$ is the predicted probability of the case being cancer under whatever model is being used.
+
+## M most Predictive Probes
+
+Figure 1 shows the cross-validated loss in relation to the in-sample loss. Cross-validation shows that the true loss is likely to be higher than the in-sample performance would suggest and that performance does not improve when more probes are used.
+
+```{r}
+cv_plot(cv10Probe, "Fig 1: Selected Probes: 10-fold CV")
+```
+
+Figure 1a shows the corresponding plot for leave one out cross-validation. The plot has narrower bands but greater instability. There is a slight suggestion that 2 or 3 probes would be better than 1. This is not seen in the 10-fold cross-validation.
+
+```{r}
+cv_plot(cvLooProbe, "Fig 1a: Selected Probes: Leave One Out CV")
+```
+
+## M most Predictive Principal Components
+
+Figure 2 shows the cross-validated loss in relation to the in-sample loss. Cross-validation shows that the true loss is likely to be higher than the in-sample performance would suggest and that performance does slightly worse when more PCs are used.
+
+```{r}
+cv_plot(cv10PcSel, "Fig 2: Selected PCs: 10-fold CV")
+```
+
+Figure 2a shows the corresponding plot for leave one out cross-validation. The plot has narrower bands and suggests that using extra selected principal components leads to worse performance.
+
+```{r}
+cv_plot(cvLooPcSel, "Fig 2a: Selected PCs: Leave One Out CV")
+```
+
+## First M Principal Components
+
+Figure 3 shows the cross-validated loss in relation to the in-sample loss. Cross-validation shows that the true loss is likely to be slightly higher than the in-sample performance would suggest and that performance is flat or very slightly better when more PCs are used. 
+
+```{r}
+cv_plot(cv10PcOrd, "Fig 3: Initial PCs: 10-fold CV")
+```
+
+Figure 3a shows the corresponding plot for leave one out cross-validation. The plot has narrower bands but leads to the same conclusion as 10-fold cross-validation.
+
+```{r}
+cv_plot(cvLooPcOrd, "Fig 3a: Initial PCs: Leave One Out CV")
+```
+
+## Conclusions
+
+* The uncertainty in the cross-validation makes it difficult to be sure that there are not small changes in performance when the number of predictors increases.  
+* None of the methods suggests strong benefit from extra features.  
+* The feature selection report shpwed that the performance seen in the validation sample (AEGIS-2) suggested  
+  - a small gain from using up to 4 probes.   
+  - a sharp increase in loss with more selected PCs.  
+  - a small improvement in performance when the sixth ordered PC is included.
+* The validation results are more similar to the leave one out cross-validation than to the 10-fold cross-validation.
+
+## Issues
+
+* These results apply an analysis of the data from AEGIS-1 alone. There is the option to combine AEGIS-1 and AEGIS-2 and run a joint analysis.  
+* Prior to combining the two studies, we should check that their results are consistent.
+
