@@ -33,7 +33,9 @@ CAGE (Classification After Gene Expression) explores ways of selecting features 
 
 ## Cross-validation
 
-Using the random sample of 1000 probes cross-validation was run on the training data (AEGIS-1) to assess how many features should be used.
+Using the random sample of 1000 probes cross-validation was run on the training data (AEGIS-1) to assess how many features should be used.  
+
+The feature selection report shows very little difference between the scaled and unscaled PCA. In this report the **unscaled PCs** are used.
 
 The Cross-Entropy loss is used to compare models. It takes the form,
 \[

@@ -17,6 +17,11 @@ pca     <- readRDS( file.path(home, "data/rData/subset_pca.rds"))
 scoreTrainDF <- readRDS(file.path(home, "data/rData/subset_train_pca_scores.rds"))
 scoreValidDF <- readRDS(file.path(home, "data/rData/subset_valid_pca_scores.rds"))
 
+pcaScaled     <- readRDS( file.path(home, "data/rData/subset_scaled_pca.rds"))
+scoreTrainScaledDF <- readRDS(file.path(home, "data/rData/subset_train_scaled_pca_scores.rds"))
+scoreValidScaledDF <- readRDS(file.path(home, "data/rData/subset_valid_scaled_pca_scores.rds"))
+
+
 knitr::opts_chunk$set(echo = FALSE, fig.align = "center",
                       message=FALSE)
 ```
@@ -31,9 +36,9 @@ A random sample of 1000 probes was used to create a subset of the data that woul
 
 This report looks at the principal component analysis (PCA) of the training data.
 
-## Principal Components
+## Unscaled Principal Components
 
-Figure 1 shows the percentage of the variance captured by each of the principal components.
+Figure 1 shows the percentage of the variance captured by each of the unscaled principal components.
 
 ```{r}
 tibble( pc = 1:375,
@@ -41,7 +46,7 @@ tibble( pc = 1:375,
   mutate( pct = 100 * sd * sd / sum(sd * sd)) %>%
   ggplot( aes(x = pc, y = pct, xend = pc, yend = 0)) +
   geom_segment() +
-  labs( title = "Standard deviatons of the Principal Components",
+  labs( title = "Fig 1: Standard deviatons of the Unscaled PCs",
         y     = "Percent Variance",
         x     = "Principal Component Number")
 ```
@@ -71,7 +76,7 @@ scoreTrainDF %>%
                select(id, diagnosis), by = "id") %>%
   ggplot( aes(x = PC, y = score, fill = diagnosis)) +
   geom_boxplot() +
-  labs(title = "Training data: PCA Scores 1 to 5 by diagnosis",
+  labs(title = "Fig 2: Training data: PCA Scores 1 to 5 by diagnosis",
        y     = "Score",
        x     = "Principal Component") +
   theme( legend.position = c(.85, .85))
@@ -88,15 +93,84 @@ scoreValidDF %>%
                select(id, diagnosis), by = "id") %>%
   ggplot( aes(x = PC, y = score, fill = diagnosis)) +
   geom_boxplot() +
-  labs(title = "Validation data: PCA Scores 1 to 5 by diagnosis",
+  labs(title = "Fig 3: Validation data: PCA Scores 1 to 5 by diagnosis",
        y     = "Score",
        x     = "Principal Component") +
   theme( legend.position = c(.85, .85))
 
 ```
 
+## Scaled Principal Components
+
+Figure 4 shows the percentage of the variance captured by each of the scaled principal components.
+
+```{r}
+tibble( pc = 1:375,
+        sd = pcaScaled$sdev) %>%
+  mutate( pct = 100 * sd * sd / sum(sd * sd)) %>%
+  ggplot( aes(x = pc, y = pct, xend = pc, yend = 0)) +
+  geom_segment() +
+  labs( title = "Fig 4: Standard deviatons of the Scaled PCs",
+        y     = "Percent Variance",
+        x     = "Principal Component Number")
+```
+
+A table of the cumulative percentage of the variance explained by the first 20 PCs shows that 5 scaled principal components are needed to capture over 50% of the variance.
+```{r}
+tibble( pc = 1:375,
+        sd = pcaScaled$sdev) %>%
+  mutate( var = sd * sd,
+          pct = round(100 * var / sum(var), 1),
+          var = round(var, 1),
+          cumpct = cumsum(pct)) %>%
+  select( pc, var, pct, cumpct) %>%
+  slice(1:20) %>%
+  print()
+  
+```
+
+Figure 5 shows the principal component scores of the subjects in the training data (AEGIS-1) for the first 5 scaled PCs separated by diagnosis.
+
+```{r}
+scoreTrainScaledDF %>%
+  select( id, PC1:PC5) %>%
+  pivot_longer(starts_with("PC"), names_to = "PC", 
+               values_to = "score") %>%
+  left_join( subjDF %>% 
+               select(id, diagnosis), by = "id") %>%
+  ggplot( aes(x = PC, y = score, fill = diagnosis)) +
+  geom_boxplot() +
+  labs(title = "Fig 5: Training data: Scaled PCA Scores 1 to 5 by diagnosis",
+       y     = "Score",
+       x     = "Principal Component") +
+  theme( legend.position = c(.85, .85))
+```
+
+Figure 3 shows the principal component scores of the subjects in the validation data (AEGIS-2) for the first 5 PCs as derived from the training data.
+
+```{r}
+scoreValidScaledDF %>%
+  select( id, PC1:PC5) %>%
+  pivot_longer(starts_with("PC"), names_to = "PC", 
+               values_to = "score") %>%
+  left_join( subjDF %>% 
+               select(id, diagnosis), by = "id") %>%
+  ggplot( aes(x = PC, y = score, fill = diagnosis)) +
+  geom_boxplot() +
+  labs(title = "Fig 5: Validation data: Scaled PCA Scores 1 to 5 by diagnosis",
+       y     = "Score",
+       x     = "Principal Component") +
+  theme( legend.position = c(.85, .85))
+
+```
+
+## Conclusions
+
+The unscaled and scaled PCAs appear to be quite similar. This is not surprising given that the expressions are normalised within subject and as a result the distributions of the expressions within probes are relatively similar.
+
+It is not clear which analysis will be most stable, or which will better capture the differences between benign disease and cancer.
+
 ## Issues
 
-* PCA can either be performed on the correlations (centred and scaled) or the covariances (centred but not scales). `prcomp()` defaults to covariances, but correlations. In a covariance PCA the main PCs rely heavily on probes with a large variance.
+* PCA is sensitive to outliers and there are some quite extreme values in the data. Perhaps the scaled analysis will be less sentitive to outliers.  
 
-* PCA is sensitive to outliers and there are some quite extreme values in the data
