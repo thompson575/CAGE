@@ -95,3 +95,8 @@ scoreValidDF %>%
 
 ```
 
+## Issues
+
+* PCA can either be performed on the correlations (centred and scaled) or the covariances (centred but not scales). `prcomp()` defaults to covariances, but correlations. In a covariance PCA the main PCs rely heavily on probes with a large variance.
+
+* PCA is sensitive to outliers and there are some quite extreme values in the data

@@ -1,7 +1,7 @@
 .Rproj.user
 .Rhistory
 .RData
-.Rproj
+*.Rproj
 .Ruserdata
 *.html
 data/
