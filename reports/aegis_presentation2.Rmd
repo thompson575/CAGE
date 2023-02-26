@@ -1,0 +1,248 @@
+---
+title: "Feature Extraction and Selection with Microarray Data"
+author: "John Thompson"
+date: "2023-02-23"
+output: 
+  slidy_presentation:
+    css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Extraction and Selection
+
+* **Feature Extraction** derives transformed values (features) that capture the majority of the information in a dataset. 
+
+<br>
+
+* Feature extraction is sometimes called **dimensionality reduction**.  
+
+<br>
+
+* **Feature Selection** identifies a subset of the features important for a particular task.
+
+## Extraction and Selection
+
+```{r echo = FALSE, fig.align='center'}
+library(DiagrammeR)
+
+grViz("
+digraph dot {
+
+
+graph [layout = dot,
+       rankdir = LR,
+       ranksep = 2]
+
+node [shape = circle,
+      style = filled,
+      width = 1,
+      label = ' ']
+ 
+edge [color = black]
+
+     
+subgraph cluster_data {
+    label = 'Raw Data';
+    x1 [color = green] x2 [color = green] x3 [color = green] 
+    x4 [color = green]  x5 [color = green] x6 [color = green];
+  }      
+
+
+subgraph cluster_features {
+    label = 'Features';
+    z1 [color = cyan ] z2 [color = cyan ] 
+    z3 [color = cyan ] z4 [color = cyan ];
+  }      
+
+subgraph cluster_selection {
+    label = 'Selection';
+    w2 [color = red];
+    w4 [color = red];
+
+  }      
+
+x1 -> {z1 z2 z3} 
+x2 -> {z1 z3 z4} 
+x3 -> {z1 z3 z4} 
+x4 -> {z2 z3 z4} 
+x5 -> {z1 z3 z4} 
+x5 -> {z2 z3 z4}
+x6 -> {z1 z2 z4}
+    z2 -> w2 
+    z4 -> w4;
+
+}")
+```
+
+## Principal Component Analysis (PCA)
+
+* Method for dimensionality reduction (feature extraction)
+
+* uncorrelated linear combinations of the raw data  
+
+* successively orientated in the direction of maximum variance  
+
+![](figs/pca.png){height=75%, width=75%}
+
+## AEGIS Trials I and II
+
+Airway Epithelium Gene Expression in the Diagnosis of Lung Cancer
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.align='center'}
+library(tidyverse)
+
+home <- "C:/Projects/RCourse/Masterclass/CAGE"
+
+subjDF  <- readRDS( file.path(home, "data/rData/subjects.rds") )
+
+subjDF %>%
+  ggplot( aes( x= study, fill = diagnosis)) +
+  geom_bar( position = "dodge") +
+  labs( title = "Numbers of cancer and benign cases in each study")
+```
+
+## The Investigation
+
+- Develop a model to classify cancer/benign
+
+- Use AEGIS-1 to train the model and AEGIS-2 to validate  
+
+- Methods Investigated
+
+  - No Feature Extraction .. Select the M probes that best classify  
+  - Use PCA for feature extraction .. Use the first M PCs
+  - PCA for feature extraction .. Select the M PCs that best classify  
+  
+- PCA applied to the raw data and to the scaled raw data  
+
+## Loss Function
+
+Logistic regression models are to predict the cancer cases
+
+Model performance is assessed using the cross-entropy loss
+\[
+- \frac{1}{N} \sum_{i=1}^N y_i log(\hat{y}_i) + (1-y_i) log(1-\hat{y}_i)
+\]
+
+This is equivalent to the log-likelihood for a logistic regression
+
+## Results: In-sample 1-50 Features
+
+```{r}
+r <- readRDS(file.path(home, "data/dataStore/aegis1_classification_loss.rds"))
+
+r$pbSelDF %>%
+  rename( probe = inloss) %>%
+  left_join( r$pcSelDF %>% rename( pcSel  = inloss), by = "n") %>%
+  left_join( r$pcOrdDF %>% rename( pcOrd = inloss), by = "n") %>%
+  left_join( r$pcScdSelDF %>% rename( pcScdSel  = inloss), by = "n") %>%
+  left_join( r$pcScdOrdDF %>% rename( pcScdOrd = inloss), by = "n") %>%
+  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
+               names_to = "method", values_to = "loss") %>%
+  mutate( method = factor(method,
+                          levels = c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"),
+                          labels = c("probe", "PCA Select", "PCA Order", "Scaled PCA Sel", "Scaled PCA Ord"))) %>%
+  mutate( source = str_replace(method, "loss", ""))  %>%
+  ggplot( aes(x = n, y = loss, colour=method)) +
+  geom_line( size=1.2) +
+  labs( title = "In-sample loss for the 5 methods",
+        y     = "Loss",
+        x     = "Number of predictors") +
+  theme( legend.position = c(0.15, 0.25))
+
+```
+
+
+## Results: In-sample 1-8 Features
+
+```{r}
+r <- readRDS(file.path(home, "data/dataStore/aegis1_classification_loss.rds"))
+
+r$pbSelDF %>%
+  rename( probe = inloss) %>%
+  left_join( r$pcSelDF %>% rename( pcSel  = inloss), by = "n") %>%
+  left_join( r$pcOrdDF %>% rename( pcOrd = inloss), by = "n") %>%
+  left_join( r$pcScdSelDF %>% rename( pcScdSel  = inloss), by = "n") %>%
+  left_join( r$pcScdOrdDF %>% rename( pcScdOrd = inloss), by = "n") %>%
+  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
+               names_to = "method", values_to = "loss") %>%
+  mutate( method = factor(method,
+                          levels = c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"),
+                          labels = c("probe", "PCA Select", "PCA Order", "Scaled PCA Sel", "Scaled PCA Ord"))) %>%
+  mutate( source = str_replace(method, "loss", ""))  %>%
+  filter( n <= 8 ) %>%
+  ggplot( aes(x = n, y = loss, colour=method)) +
+  geom_line( size=1.2) +
+  labs( title = "In-sample loss for the 5 methods",
+        y     = "Loss",
+        x     = "Number of predictors") +
+  theme( legend.position = c(0.15, 0.25))
+
+```
+
+## Results: Out-of-sample 1-50 Features
+
+```{r}
+r <- readRDS(file.path(home, "data/dataStore/aegis1_classification_loss.rds"))
+
+r$pbSelDF %>%
+  rename( probe = outloss) %>%
+  left_join( r$pcSelDF %>% rename( pcSel  = outloss), by = "n") %>%
+  left_join( r$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
+  left_join( r$pcScdSelDF %>% rename( pcScdSel  = outloss), by = "n") %>%
+  left_join( r$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
+  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
+               names_to = "method", values_to = "loss") %>%
+  mutate( method = factor(method,
+                          levels = c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"),
+                          labels = c("probe", "PCA Select", "PCA Order", "Scaled PCA Sel", "Scaled PCA Ord"))) %>%
+  mutate( source = str_replace(method, "loss", ""))  %>%
+  ggplot( aes(x = n, y = loss, colour=method)) +
+  geom_line( size=1.2) +
+  labs( title = "Out-of-sample loss for the 5 methods",
+        y     = "Loss",
+        x     = "Number of predictors") +
+  theme( legend.position = c(0.15, 0.75))
+
+```
+
+
+## Results: Out-of-sample 1-8 Features
+
+```{r}
+r <- readRDS(file.path(home, "data/dataStore/aegis1_classification_loss.rds"))
+
+r$pbSelDF %>%
+  rename( probe = outloss) %>%
+  left_join( r$pcSelDF %>% rename( pcSel  = outloss), by = "n") %>%
+  left_join( r$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
+  left_join( r$pcScdSelDF %>% rename( pcScdSel  = outloss), by = "n") %>%
+  left_join( r$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
+  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
+               names_to = "method", values_to = "loss") %>%
+  mutate( method = factor(method,
+                          levels = c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"),
+                          labels = c("probe", "PCA Select", "PCA Order", "Scaled PCA Sel", "Scaled PCA Ord"))) %>%
+  mutate( source = str_replace(method, "loss", ""))  %>%
+  filter( n <= 8 ) %>%
+  ggplot( aes(x = n, y = loss, colour=method)) +
+  geom_line( size=1.2) +
+  labs( title = "Out-of-sample loss for the 5 methods",
+        y     = "Loss",
+        x     = "Number of predictors") +
+  theme( legend.position = c(0.15, 0.75))
+
+```
+
+## Conclusions
+
+* Features selected in AEGIS-1 perform poorly in AEGIS-2  
+* Scaled and unscaled PCA performs equally well  
+* In-sample performance suggests that 
+  - selected PCs out perform selected probes  
+  - the first PCs predict particularly poorly  
+* Out-of-sample results do not support the use of selected PCs  
+  - suggesting that small PCs over-fit the training data

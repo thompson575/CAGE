@@ -4,6 +4,10 @@
 *.Rproj
 .Ruserdata
 *.html
+*.pdf
+*.pptx
+*.png
+*.tex
 data/
 temp/
 docs/

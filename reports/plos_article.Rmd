@@ -1,0 +1,261 @@
+---
+title: Feature Extraction and Selection with Microarray data
+author:
+  - name: John Thompson
+    email: trj@le.ac.uk
+    affiliation: 
+      - Department of Population Health Sciences
+      - University of Leicester
+    corresponding: trj@le.ac.uk
+address:
+  - code: University of Leicester
+    address: George Davies Centre, University Rd, Leicester, LE1 7RH
+abstract: |
+  Feature Extraction using principal components is shown to lead to poorly performing classification models. The poor performance is illustrated with data from a microarray study.
+author_summary: |
+  Principal component analysis is widely used for feature extraction and dimensionality reduction. However, the principal components that capture the majority of the variance are not guaranteed to capture the important signal needed for subsequent classification. What is more, the principal components that explain smaller amounts of the variance tend to be poorly defined leading to good in-sample, but poor out-of-sample performance.
+bibliography: plosfile.bib
+output: rticles::plos_article
+# plos.csl can be download and used locally
+csl: http://www.zotero.org/styles/plos
+---
+
+# Introduction
+
+Principal component analysis @jolliffe2005principal is widely used for feature extraction and dimensionality reduction song2010feature. However, several authors have questioned this practice @cheriyadat2003principal.
+
+```{r setup, include=FALSE}
+library(tidyverse)
+
+home <- "C:/Projects/RCourse/Masterclass/CAGE"
+
+theme_set( theme_light() )
+# ---------------------------------------------
+# Named list of results containing
+# pcUniDF, pcSelDF, pcOrdDF, pbUniDF, pbSelDF
+#
+  
+readRDS( file.path(home, "data/dataStore/classification_loss.rds")) -> results
+
+knitr::opts_chunk$set(echo = FALSE, fig.align = "center",
+                      message=FALSE, fig.width=4, fig.height=3)
+```
+
+# Mehtods
+
+This project investigates the pros and cons of basing the classification on the principal components of the gene expression. @xu2022smoking by comparing five strategies
+
+* sets of the M most predictive probes in univariate logistic regression  
+* sets of the M most predictive unscaled PCs in univariate logistic regression  
+* sets of the first M unscaled PCs  
+* sets of the M most predictive scaled PCs in univariate logistic regression  
+* sets of the first M scaled PCs  
+
+A scaled PCA uses the principal components of the correlations and an unscaled PCA uses the principal components of the covariances.
+
+Selections were made using the a microarray analysis of AEGIS-1 and validation was based on the same microarray applied to the subjects from AEGIS-2.
+
+The Cross-Entropy loss is used to compare models. It takes the form,
+\[
+- \frac{1}{N} \sum_{i=1}^N y_i log(\hat{y}_i) + (1-y_i) log(1-\hat{y}_i)
+\]
+where N is the number of subjects, $y_i$ is 0 for benign cases and 1 for cancer cases and $\hat{y}_i$ is the predicted probability of the case being cancer under whatever model is being used.
+
+The training data are used to define the principal component, make the selections and fit the logistic regression model. That final model is then used with the validation data.
+
+# Results
+
+## M most Predictive Probes
+
+Figure 1 shows the loss when sets of M probes are used to predict cancer in a multivariable logistic regression. The in-sample loss declines steadily as more probes are used, but the out-of-sample loss increases dramatically after a 4 probe model.
+
+```{r}
+results$pbSelDF %>%
+  ggplot( aes(x = n, y = inloss)) +
+  geom_line( size=1.2, colour="blue") +
+  geom_line( aes(y = outloss), size=1.2, colour="red") +
+  labs( title = "Fig 1: Loss from M Selected Probes",
+        y     = "Loss",
+        x     = "Number of Probes (M)") +
+  geom_text( x=35, y=0.58, label="In-sample", colour="blue") +
+  geom_text( x=35, y=0.90, label="Out-of-sample", colour="red") 
+```
+
+The first 4 selected probes are show below. Here the loss refers to the loss in a univarable logistic regression using only that probe.
+
+```{r}
+results$pbUniDF %>%
+  arrange( loss ) %>%
+  slice(1:4) %>%
+  rename( probe = x) %>%
+  print()
+```
+
+Manual searching of the Ensembl database at https://www.ensembl.org/Homo_sapiens/Info/Index showed that  
+
+* ENSG00000124357 maps to the NAGK gene (N-acetylglucosamine kinase)  
+* ENSG00000118322 maps to the ATP10B gene (ATPase phospholipid transporting 10B)  
+* ENSG00000140464 maps to the PML gene (PML nuclear body scaffold)  
+* ENSG00000026950 maps to the BTN3A1 gene (Butyrophilin subfamily 3 member A1)  
+
+## M most Predictive Unscaled PCs
+
+Figure 2 shows the loss when sets of M selected principal components are used to predict cancer in a multivariable logistic regression. Although the in-sample loss decreases steadily the out-of-sample loss is always greater and it increases as more PCs are added. This seems to reflect the instability of the principal component analysis.
+
+```{r}
+results$pcSelDF %>%
+  ggplot( aes(x = n, y = inloss)) +
+  geom_line( size=1.2, colour="blue") +
+  geom_line( aes(y = outloss), size=1.2, colour="red") +
+  labs( title = "Fig 2: Loss from Selected Unscaled PCs",
+        y     = "Loss",
+        x     = "Number of PCs") +
+  geom_text( x=35, y=0.58, label="In-sample", colour="blue") +
+  geom_text( x=35, y=2.00, label="Out-of-sample", colour="red")
+```
+
+## First M Unscaled PCs
+
+Figure 3 shows the loss when the first M principal components (those with the largest eigenvalues) are used as the predictors. Once again the in-sample loss decreases steadily. The out-of-sample loss is higher and remains flat or perhaps drifts down for the first 6 PCs before rising dramatically. This would be consistent with the first 6 PCs being relatively well-defined in the training data, so that they still meaning in the validation sample.
+
+```{r}
+results$pcOrdDF %>%
+  ggplot( aes(x = n, y = inloss)) +
+  geom_line( size=1.2, colour="blue") +
+  geom_line( aes(y = outloss), size=1.2, colour="red") +
+  labs( title = "Fig 3: Loss from Ordered Unscaled PCs",
+        y     = "Loss",
+        x     = "Number of PCs") +
+  geom_text( x=35, y=0.58, label="In-sample", colour="blue") +
+  geom_text( x=35, y=1.00, label="Out-of-sample", colour="red")
+```
+
+## M most Predictive Scaled PCs
+
+Figure 4 shows the loss when sets of M selected scaled principal components are used to predict cancer in a multivariable logistic regression. Although the in-sample loss decreases steadily the out-of-sample loss is always greater and it increases as more PCs are added. This seems to reflect the instability of the principal component analysis.
+
+```{r}
+results$pcScdSelDF %>%
+  ggplot( aes(x = n, y = inloss)) +
+  geom_line( size=1.2, colour="blue") +
+  geom_line( aes(y = outloss), size=1.2, colour="red") +
+  labs( title = "Fig 4: Loss from Selected Scaled PCs",
+        y     = "Loss",
+        x     = "Number of PCs") +
+  geom_text( x=35, y=0.58, label="In-sample", colour="blue") +
+  geom_text( x=35, y=2.00, label="Out-of-sample", colour="red")
+```
+
+## First M Scaled PCs
+
+Figure 5 shows the loss when the first M scaled principal components (those with the largest eigenvalues) are used as the predictors. Once again the in-sample loss decreases steadily. The out-of-sample loss is higher and remains flat or perhaps drifts down for the first 6 PCs before rising dramatically. This would be consistent with the first 6 PCs being relatively well-defined in the training data, so that they still meaning in the validation sample.
+
+```{r}
+results$pcScdOrdDF %>%
+  ggplot( aes(x = n, y = inloss)) +
+  geom_line( size=1.2, colour="blue") +
+  geom_line( aes(y = outloss), size=1.2, colour="red") +
+  labs( title = "Fig 5: Loss from Ordered Scaled PCs",
+        y     = "Loss",
+        x     = "Number of PCs") +
+  geom_text( x=35, y=0.58, label="In-sample", colour="blue") +
+  geom_text( x=35, y=1.00, label="Out-of-sample", colour="red")
+```
+
+## Comparison of Methods
+
+Figure 6 shows the in-sample losses of the five methods of feature selection. Based on the in-sample performance alone it appears that selected PCs give the smallest loss.
+
+```{r}
+results$pbSelDF %>%
+  rename( probe = outloss) %>%
+  left_join( results$pcSelDF %>% rename( pcSel = outloss), by = "n") %>%
+  left_join( results$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
+  left_join( results$pcScdSelDF %>% rename( pcScdSel = outloss), by = "n") %>%
+  left_join( results$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
+  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
+               names_to = "method", values_to = "loss") %>%
+  mutate( source = str_replace(method, "loss", ""))  %>%
+  ggplot( aes(x = n, y = loss, colour=method)) +
+  geom_line( size=1.2) +
+  labs( title = "Fig 6: In-sample loss for the 3 feature selection methods",
+        y     = "Loss",
+        x     = "Number of predictors") +
+  theme( legend.position = c(0.15, 0.85))
+```
+
+Figure 6a shows the same plot concentrated on 8 or fewer features.
+
+```{r}
+results$pbSelDF %>%
+  rename( probe = outloss) %>%
+  left_join( results$pcSelDF %>% rename( pcSel = outloss), by = "n") %>%
+  left_join( results$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
+  left_join( results$pcScdSelDF %>% rename( pcScdSel = outloss), by = "n") %>%
+  left_join( results$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
+  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
+               names_to = "method", values_to = "loss") %>%
+  mutate( source = str_replace(method, "loss", ""))  %>%
+  filter( n <= 8 ) %>%
+  ggplot( aes(x = n, y = loss, colour=method)) +
+  geom_line( size=1.2) +
+  labs( title = "Fig 6a: In-sample loss for the 5 feature selection methods",
+        y     = "Loss",
+        x     = "Number of predictors") +
+  theme( legend.position = c(0.15, 0.85))
+```
+
+Figure 7 shows the out-of-sample performance of the 5 feature selection methods. None of the methods performs well with a large number of features, but selected PCs performs particularly poorly.
+
+```{r}
+results$pbSelDF %>%
+  rename( probe = outloss) %>%
+  left_join( results$pcSelDF %>% rename( pcSel = outloss), by = "n") %>%
+  left_join( results$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
+  left_join( results$pcScdSelDF %>% rename( pcScdSel = outloss), by = "n") %>%
+  left_join( results$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
+  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
+               names_to = "method", values_to = "loss") %>%
+  mutate( source = str_replace(method, "loss", ""))  %>%
+  ggplot( aes(x = n, y = loss, colour=method)) +
+  geom_line( size=1.2) +
+  labs( title = "Fig 7: Out-of-sample loss for the 5 feature selection methods",
+        y     = "Loss",
+        x     = "Number of predictors") +
+  theme( legend.position = c(0.15, 0.85))
+```
+
+Figure 7a shows the same data as figure 7 but concentrates to 8 or fewer features. Probe selection improves the loss up to 4 features. Using the initial PCs improves the loss slowly for the first 6 features, but is never as good as the top 4 probes and selected PCs performs particularly poorly.
+
+```{r}
+results$pbSelDF %>%
+  rename( probe = outloss) %>%
+  left_join( results$pcSelDF %>% rename( pcSel = outloss), by = "n") %>%
+  left_join( results$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
+  left_join( results$pcScdSelDF %>% rename( pcScdSel = outloss), by = "n") %>%
+  left_join( results$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
+  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
+               names_to = "method", values_to = "loss") %>%
+  filter( n <= 8 ) %>%
+  ggplot( aes(x = n, y = loss, colour=method)) +
+  geom_line( size=1.2) +
+  labs( title = "Fig 7a: Out-of-sample loss for the 5 feature selection methods",
+        y     = "Loss",
+        x     = "Number of predictors") +
+  theme( legend.position = c(0.15, 0.85))
+```
+
+
+# Conclusions
+
+The instability of the principal components with small eigenvalues means that feature selection based on them performs very poorly. The first few principal components are more stable but they do not perform as well as selected probes.  
+
+The results for scaled and unscaled PCs are very similar.
+
+## Issues
+
+* It is possible that the full set of over 21,000 probes will contain probes that are much more predictive. Stronger effects might make the analysis more stable.  
+* The relatively small number of patients in AEGIS-1 (n=375) contributes to instability of the principal component analysis. The conclusions might be different for studies in which n is larger.  
+* Perhaps it would make sense to restrict PC selection to M from the top R e.g. the best 5 out of the first 20 PCs  
+
+# References {#references .unnumbered}
