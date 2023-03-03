@@ -31,7 +31,7 @@ univariate_logistic <-
           loss = rep(0, nPredictors)) -> lossDF
   # -- loop over potential predictors --------------
   for( i in 1:nPredictors ) {
-    fml            <- as.formula( glue("{response} ~ {lossDF$x[i]}"))
+    fml            <- as.formula( glue("{response} ~ {predictors[i]}"))
     model          <- glm(fml, data=thisDF, family="binomial")
     lossDF$loss[i] <- calc_loss(model, thisDF)
   }

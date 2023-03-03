@@ -7,7 +7,19 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set( echo=FALSE, message=FALSE, warning=FALSE, fig.align='center')
+```
+
+```{r }
+library(tidyverse)
+
+home <- "C:/Projects/RCourse/Masterclass/CAGE/"
+
+source(file.path(home, "code/CAGE_functions.R"))
+
+subjDF  <- readRDS( file.path(home, "data/rData/subjects.rds") )
+
+r <- readRDS(file.path(home, "data/dataStore/aegis1_classification_loss.rds"))
 ```
 
 ## Extraction and Selection
@@ -21,6 +33,7 @@ knitr::opts_chunk$set(echo = FALSE)
 <br>
 
 * **Feature Selection** identifies a subset of the features important for a particular task.
+
 
 ## Principal Component Analysis (PCA)
 
@@ -36,13 +49,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 Airway Epithelium Gene Expression in the Diagnosis of Lung Cancer
 
-```{r echo=FALSE, message=FALSE, warning=FALSE, fig.align='center'}
-library(tidyverse)
-
-home <- "C:/Projects/RCourse/Masterclass/CAGE"
-
-subjDF  <- readRDS( file.path(home, "data/rData/subjects.rds") )
-
+```{r echo=FALSE, fig.align='center', fig.height=4}
 subjDF %>%
   ggplot( aes( x= study, fill = diagnosis)) +
   geom_bar( position = "dodge") +
@@ -77,109 +84,51 @@ This is equivalent to the log-likelihood for a logistic regression
 ## Results: In-sample 1-50 Features
 
 ```{r}
-r <- readRDS(file.path(home, "data/dataStore/aegis1_classification_loss.rds"))
-
-r$pbSelDF %>%
-  rename( probe = inloss) %>%
-  left_join( r$pcSelDF %>% rename( pcSel  = inloss), by = "n") %>%
-  left_join( r$pcOrdDF %>% rename( pcOrd = inloss), by = "n") %>%
-  left_join( r$pcScdSelDF %>% rename( pcScdSel  = inloss), by = "n") %>%
-  left_join( r$pcScdOrdDF %>% rename( pcScdOrd = inloss), by = "n") %>%
-  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
-               names_to = "method", values_to = "loss") %>%
-  mutate( method = factor(method,
-                          levels = c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"),
-                          labels = c("probe", "PCA Select", "PCA Order", "Scaled PCA Sel", "Scaled PCA Ord"))) %>%
-  mutate( source = str_replace(method, "loss", ""))  %>%
-  ggplot( aes(x = n, y = loss, colour=method)) +
-  geom_line( size=1.2) +
-  labs( title = "In-sample loss for the 5 methods",
-        y     = "Loss",
-        x     = "Number of predictors") +
-  theme( legend.position = c(0.15, 0.25))
-
+list( probe  = r$probeSelectedDF,
+      PCsel  = r$pcaSelectedDF,
+      PCord  = r$pcaOrderedDF,
+      sPCsel = r$pcaScaledSelectedDF,
+      sPCord = r$pcaScaledOrderedDF)  %>%
+  plot_method_comparison(inloss) +
+  ggtitle("In-sample loss for the 5 feature selection methods")
 ```
-
 
 ## Results: In-sample 1-8 Features
 
 ```{r}
-r <- readRDS(file.path(home, "data/dataStore/aegis1_classification_loss.rds"))
-
-r$pbSelDF %>%
-  rename( probe = inloss) %>%
-  left_join( r$pcSelDF %>% rename( pcSel  = inloss), by = "n") %>%
-  left_join( r$pcOrdDF %>% rename( pcOrd = inloss), by = "n") %>%
-  left_join( r$pcScdSelDF %>% rename( pcScdSel  = inloss), by = "n") %>%
-  left_join( r$pcScdOrdDF %>% rename( pcScdOrd = inloss), by = "n") %>%
-  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
-               names_to = "method", values_to = "loss") %>%
-  mutate( method = factor(method,
-                          levels = c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"),
-                          labels = c("probe", "PCA Select", "PCA Order", "Scaled PCA Sel", "Scaled PCA Ord"))) %>%
-  mutate( source = str_replace(method, "loss", ""))  %>%
-  filter( n <= 8 ) %>%
-  ggplot( aes(x = n, y = loss, colour=method)) +
-  geom_line( size=1.2) +
-  labs( title = "In-sample loss for the 5 methods",
-        y     = "Loss",
-        x     = "Number of predictors") +
-  theme( legend.position = c(0.15, 0.25))
+list( probe  = r$probeSelectedDF     %>% slice(1:8),
+      PCsel  = r$pcaSelectedDF       %>% slice(1:8),
+      PCord  = r$pcaOrderedDF        %>% slice(1:8),
+      sPCsel = r$pcaScaledSelectedDF %>% slice(1:8),
+      sPCord = r$pcaScaledOrderedDF  %>% slice(1:8))  %>%
+  plot_method_comparison(inloss) +
+  ggtitle("In-sample loss for the 5 feature selection methods")
 
 ```
 
 ## Results: Out-of-sample 1-50 Features
 
 ```{r}
-r <- readRDS(file.path(home, "data/dataStore/aegis1_classification_loss.rds"))
-
-r$pbSelDF %>%
-  rename( probe = outloss) %>%
-  left_join( r$pcSelDF %>% rename( pcSel  = outloss), by = "n") %>%
-  left_join( r$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
-  left_join( r$pcScdSelDF %>% rename( pcScdSel  = outloss), by = "n") %>%
-  left_join( r$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
-  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
-               names_to = "method", values_to = "loss") %>%
-  mutate( method = factor(method,
-                          levels = c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"),
-                          labels = c("probe", "PCA Select", "PCA Order", "Scaled PCA Sel", "Scaled PCA Ord"))) %>%
-  mutate( source = str_replace(method, "loss", ""))  %>%
-  ggplot( aes(x = n, y = loss, colour=method)) +
-  geom_line( size=1.2) +
-  labs( title = "Out-of-sample loss for the 5 methods",
-        y     = "Loss",
-        x     = "Number of predictors") +
-  theme( legend.position = c(0.15, 0.75))
-
+list( probe  = r$probeSelectedDF,
+      PCsel  = r$pcaSelectedDF,
+      PCord  = r$pcaOrderedDF,
+      sPCsel = r$pcaScaledSelectedDF,
+      sPCord = r$pcaScaledOrderedDF)  %>%
+  plot_method_comparison(outloss) +
+  ggtitle("Out-of-sample loss for the 5 feature selection methods")
 ```
 
 
 ## Results: Out-of-sample 1-8 Features
 
 ```{r}
-r <- readRDS(file.path(home, "data/dataStore/aegis1_classification_loss.rds"))
-
-r$pbSelDF %>%
-  rename( probe = outloss) %>%
-  left_join( r$pcSelDF %>% rename( pcSel  = outloss), by = "n") %>%
-  left_join( r$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
-  left_join( r$pcScdSelDF %>% rename( pcScdSel  = outloss), by = "n") %>%
-  left_join( r$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
-  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
-               names_to = "method", values_to = "loss") %>%
-  mutate( method = factor(method,
-                          levels = c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"),
-                          labels = c("probe", "PCA Select", "PCA Order", "Scaled PCA Sel", "Scaled PCA Ord"))) %>%
-  mutate( source = str_replace(method, "loss", ""))  %>%
-  filter( n <= 8 ) %>%
-  ggplot( aes(x = n, y = loss, colour=method)) +
-  geom_line( size=1.2) +
-  labs( title = "Out-of-sample loss for the 5 methods",
-        y     = "Loss",
-        x     = "Number of predictors") +
-  theme( legend.position = c(0.15, 0.75))
-
+list( probe  = r$probeSelectedDF     %>% slice(1:8),
+      PCsel  = r$pcaSelectedDF       %>% slice(1:8),
+      PCord  = r$pcaOrderedDF        %>% slice(1:8),
+      sPCsel = r$pcaScaledSelectedDF %>% slice(1:8),
+      sPCord = r$pcaScaledOrderedDF  %>% slice(1:8))  %>%
+  plot_method_comparison(outloss) +
+  ggtitle("Out-of-sample loss for the 5 feature selection methods")
 ```
 
 ## Conclusions
