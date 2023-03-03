@@ -1,23 +1,27 @@
+library(tidyverse)
+library(glue)
+
 # =====================================================
-# Loss for this model and this data frame
-#
-calc_loss <- function(thisModel, thisDF) {
+# Calculate the mean cross-entropy loss
+# 
+calc_loss <- function(thisModel,   # the model
+                      thisDF       # the data
+                      ) {
   response <- names(thisModel$model)[1]
   y        <- thisDF[[ response]]
-  # z        <- predict(thisModel, newdata=thisDF)
-  # z        <- pmax( pmin(z, 20), -20)
-  # yhat     <- 1 / ( 1 + exp(-z) )
-    yhat     <- predict(thisModel, newdata=thisDF, type="response")
-  # -- Mean Cross-Entropy ----------------------
+  yhat     <- predict(thisModel, newdata=thisDF, type="response")
   return( - mean( y * log(yhat) + (1 - y) * log(1 - yhat) ) )
 }
 
 # =====================================================
-# Function to calculate univariate Loss
+# calculate in-sample losses for a set of predictors
+# repeats univariate logistic regression  
+#            response ~ single predictor
 #
-uni_logistic <- function(thisDF,     # the data
-                     response,   # name of response
-                     predictors  # names of potential predictors
+univariate_logistic <- 
+  function(thisDF,     # the data
+           response,   # name of response
+           predictors  # names of potential predictors
 ) {
   # -- number of potential predictors --------------
   nPredictors <- length(predictors)
@@ -27,7 +31,7 @@ uni_logistic <- function(thisDF,     # the data
           loss = rep(0, nPredictors)) -> lossDF
   # -- loop over potential predictors --------------
   for( i in 1:nPredictors ) {
-    fml            <- as.formula( paste0(response, " ~ ", lossDF$x[i]))
+    fml            <- as.formula( glue("{response} ~ {lossDF$x[i]}"))
     model          <- glm(fml, data=thisDF, family="binomial")
     lossDF$loss[i] <- calc_loss(model, thisDF)
   }
@@ -36,69 +40,34 @@ uni_logistic <- function(thisDF,     # the data
 }
 
 # =====================================================
-# Loss of Multivariate Regressions using Selected Predictors
+# Loss (in-sample & out-of-sample) for
+# Multivariate Logistic Regression
+#        response ~ set of predictors
+# predictors used are first M from lossDF  M=1..maxSel
 #
-sel_logistic <- function(thisDF,    # the data
-                         validDF,   # validation data
-                     response,  # name of the response
-                     lossDF,    # results from uni_loss
-                     maxSel=10, # maximum number of predictors
-                     sort=TRUE  # whether to sort by uni Loss
+multiple_logistic <- 
+  function(lossDF,    # results from uni_logistic
+           thisDF,    # the data
+           validDF,   # validation data
+           response,  # name of the response
+           maxSel=50  # maximum number of predictors
 ) {
   # -- DF to contain the results ------------
-  tibble( n    = 1:maxSel,
-          inloss = rep(0, maxSel),
+  tibble( M       = 1:maxSel,
+          inloss  = rep(0, maxSel),
           outloss = rep(0, maxSel)) -> selLossDF
-  # -- sort by Loss if required ---------------
-  if( sort ) {
-    lossDF %>%
-      arrange( loss) -> lossDF
-  }
-  topXs <- lossDF$x
   # -- loop over number of predictors -------
-  for( n in 1:maxSel ) {
+  for( M in 1:maxSel ) {
     thisDF %>% 
-      select( all_of( c(topXs[1:n], response)) ) %>%
-      glm( as.formula( paste0(response, " ~ .")), data=.,
+      select( all_of( c(lossDF$x[1:M], response)) ) %>%
+      glm( as.formula( glue("{response} ~ .") ), data=.,
            family="binomial") -> model
     
-    selLossDF$inloss[n] <- calc_loss(model, thisDF)
-    selLossDF$outloss[n] <- calc_loss(model, validDF)
+    selLossDF$inloss[M]  <- calc_loss(model, thisDF)
+    selLossDF$outloss[M] <- calc_loss(model, validDF)
   }
   # -- return the results -------------------
   return( selLossDF )
-}
-
-# =====================================================
-# Residual plots for a fitted model
-#
-resid_plots <- function(model) {
-  
-  # -- Residuals vs Fitted values --------------
-  augment(model) %>%
-    ggplot( aes(x=.fitted, y=.resid)) +
-    geom_point() +
-    geom_hline(yintercept=c(-1.96*glance(model)$sigma, 
-                            0, 
-                            1.96*glance(model)$sigma ),
-               lty=c(2,1,2)) +
-    labs(title="Residuals vs Fitted Values",
-         y = "Residuals",
-         x = "Fitted values") -> p1
-  
-  # -- QQ plot ---------------------------------
-  augment(model) %>%
-    arrange( .resid ) %>%
-    mutate( p = (row_number() - 0.5)/length(.resid),
-            z = qnorm(p)) %>%
-    ggplot( aes(x=z, y=.resid)) +
-    geom_point() +
-    geom_smooth( method="lm") +
-    labs(title="Normal QQ plot of the residuals",
-         y = "Residuals",
-         x = "Expected Normal Values")  -> p2
-  # -- return list of plots ---------------------
-  return( list(p1, p2) )
 }
 
 # =====================================================
@@ -152,7 +121,8 @@ cv_loss <- function(thisDF,      # the original data
         bind_cols(predict(pcs, newdata=testDF) %>%
                     as_tibble()) -> testDF
       # -- names of the PCs ----------------------
-      x <- paste0("PC", 1:length(pcs$sdev[pcs$sdev > 0]))
+      nPC <- length(pcs$sdev[pcs$sdev > 0])
+      x <- glue("PC{1:nPC}" )
     } else {
       # -- names of the genes --------------------
       x <- predictors
@@ -182,6 +152,123 @@ cv_loss <- function(thisDF,      # the original data
   # -- return the results ------------------------
   return( list(trainLoss = trainLoss, testLoss = testLoss,
                selDF = selDF) )
+}
+
+# =====================================================
+# Plot Eigenvalues of a PCA
+#
+plot_eigenvalues <- function(pcStd, pctVar = FALSE) {
+  if( pctVar ) {
+    y      <- 100 * pcStd * pcStd / sum(pcStd * pcStd)
+    yLabel <- "Percent Variance"
+  } else {
+    y      <- pcStd
+    yLabel <- "Standard Deviation"
+  }
+  tibble( x  = 1:length(y),
+          y  = y) %>%
+    ggplot( aes(x = x, y = y, xend = x, yend = 0)) +
+    geom_segment() +
+    labs( y     = yLabel,
+          x     = "Principal Component Number")
+}
+# =====================================================
+# Boxplot of features
+#
+boxplot_features <- 
+  function( predictors,  # names of predictors to be plotted
+            thisDF       # data for plotting 
+  ) {
+    thisDF %>%
+      pivot_longer( all_of(predictors), names_to="var", values_to="y") %>%
+      ggplot( aes(x=var, y=y, fill=diagnosis)) +
+      geom_boxplot() +
+      coord_flip() +
+      labs( x = "", fill="") +
+      theme( legend.position = "bottom")
+  }
+
+# =====================================================
+# Plot in-sample and out-of-sample loss
+#
+plot_in_out_loss <- 
+  function(selDF  # multivariate losses 
+  ) {
+    i        <- floor(0.7 * nrow(selDF))
+    xText    <- selDF$M[i]
+    yInText  <- 1.05 * selDF$inloss[i]
+    yOutText <- 0.95 * selDF$outloss[i]
+    selDF %>%
+      ggplot( aes(x = M, y = inloss)) +
+      geom_line( size=1.2, colour="blue") +
+      geom_line( aes(y = outloss), size=1.2, colour="red") +
+      geom_text( x=xText, y=yInText, label="In-sample", colour="blue") +
+      geom_text( x=xText, y=yOutText, label="Out-of-sample", colour="red") 
+  }
+
+# =====================================================
+# Plot loss comparing 5 methods
+#
+plot_method_comparison <- 
+  function( methodResults, loss 
+  ) {
+    method_labels <- names(methodResults)
+    methodResults[[1]] %>%
+      rename( m1 = {{loss}}) %>%
+      select( M, m1) %>%
+      left_join( methodResults[[2]] %>% 
+                   rename( m2 = {{loss}}) %>%
+                   select( M, m2), by = "M") %>%
+      left_join( methodResults[[3]] %>% 
+                   rename( m3 = {{loss}}) %>%
+                   select( M, m3), by = "M") %>%
+      left_join( methodResults[[4]] %>% 
+                   rename( m4 = {{loss}}) %>%
+                   select( M, m4), by = "M") %>%
+      left_join( methodResults[[5]] %>% 
+                   rename( m5 = {{loss}}) %>%
+                   select(M, m5), by = "M") %>%
+      pivot_longer(m1:m5, names_to = "method", values_to = "loss") %>%
+      mutate( method = factor(method, levels=c("m1", "m2", "m3", "m4", "m5"),
+                              labels = method_labels)) %>%
+      ggplot( aes(x = M, y = loss, colour=method)) +
+      geom_line( size=1.2) +
+      labs( y      = "Loss",
+            x      = "Number of predictors",
+            colour = "") +
+      theme( legend.position = "bottom")
+  }
+
+# =====================================================
+# Residual plots for a fitted model
+#
+resid_plots <- function(model) {
+  
+  # -- Residuals vs Fitted values --------------
+  augment(model) %>%
+    ggplot( aes(x=.fitted, y=.resid)) +
+    geom_point() +
+    geom_hline(yintercept=c(-1.96*glance(model)$sigma, 
+                            0, 
+                            1.96*glance(model)$sigma ),
+               lty=c(2,1,2)) +
+    labs(title="Residuals vs Fitted Values",
+         y = "Residuals",
+         x = "Fitted values") -> p1
+  
+  # -- QQ plot ---------------------------------
+  augment(model) %>%
+    arrange( .resid ) %>%
+    mutate( p = (row_number() - 0.5)/length(.resid),
+            z = qnorm(p)) %>%
+    ggplot( aes(x=z, y=.resid)) +
+    geom_point() +
+    geom_smooth( method="lm") +
+    labs(title="Normal QQ plot of the residuals",
+         y = "Residuals",
+         x = "Expected Normal Values")  -> p2
+  # -- return list of plots ---------------------
+  return( list(p1, p2) )
 }
 
 # =====================================================

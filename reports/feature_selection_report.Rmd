@@ -2,7 +2,9 @@
 title: 'CAGE: Feature Selection'
 author: "John Thompson"
 date: "2023-02-17"
-output: html_document
+output: 
+  html_document:
+    theme: cerulean
 ---
 
 ```{r setup, include=FALSE}
@@ -10,9 +12,13 @@ library(tidyverse)
 
 home <- "C:/Projects/RCourse/Masterclass/CAGE"
 
+source( file.path(home, "code/CAGE_functions.R") )
+
 # ---------------------------------------------
 # Named list of results containing
-# pcUniDF, pcSelDF, pcOrdDF, pbUniDF, pbSelDF
+# probeUniDF, probeSelectedDF,
+# pcaUniDF, pcaSelectedDF, pcaOrderedDF, 
+# pcaScaledUniDF, pcaScaledSelectedDF, pcaScaledOrderedDF, 
 #
   
 readRDS( file.path(home, "data/dataStore/classification_loss.rds")) -> results
@@ -54,21 +60,16 @@ The training data are used to define the principal component, make the selection
 Figure 1 shows the loss when sets of M probes are used to predict cancer in a multivariable logistic regression. The in-sample loss declines steadily as more probes are used, but the out-of-sample loss increases dramatically after a 4 probe model.
 
 ```{r}
-results$pbSelDF %>%
-  ggplot( aes(x = n, y = inloss)) +
-  geom_line( size=1.2, colour="blue") +
-  geom_line( aes(y = outloss), size=1.2, colour="red") +
+plot_in_out_loss(results$probeSelectedDF) +
   labs( title = "Fig 1: Loss from M Selected Probes",
         y     = "Loss",
-        x     = "Number of Probes (M)") +
-  geom_text( x=35, y=0.58, label="In-sample", colour="blue") +
-  geom_text( x=35, y=0.90, label="Out-of-sample", colour="red") 
+        x     = "Number of Probes (M)")
 ```
 
 The first 4 selected probes are show below. Here the loss refers to the loss in a univarable logistic regression using only that probe.
 
 ```{r}
-results$pbUniDF %>%
+results$probeUniDF %>%
   arrange( loss ) %>%
   slice(1:4) %>%
   rename( probe = x) %>%
@@ -87,15 +88,10 @@ Manual searching of the Ensembl database at https://www.ensembl.org/Homo_sapiens
 Figure 2 shows the loss when sets of M selected principal components are used to predict cancer in a multivariable logistic regression. Although the in-sample loss decreases steadily the out-of-sample loss is always greater and it increases as more PCs are added. This seems to reflect the instability of the principal component analysis.
 
 ```{r}
-results$pcSelDF %>%
-  ggplot( aes(x = n, y = inloss)) +
-  geom_line( size=1.2, colour="blue") +
-  geom_line( aes(y = outloss), size=1.2, colour="red") +
+plot_in_out_loss(results$pcaSelectedDF) +
   labs( title = "Fig 2: Loss from Selected Unscaled PCs",
         y     = "Loss",
-        x     = "Number of PCs") +
-  geom_text( x=35, y=0.58, label="In-sample", colour="blue") +
-  geom_text( x=35, y=2.00, label="Out-of-sample", colour="red")
+        x     = "Number of PCs (M)")
 ```
 
 ## First M Unscaled PCs
@@ -103,15 +99,10 @@ results$pcSelDF %>%
 Figure 3 shows the loss when the first M principal components (those with the largest eigenvalues) are used as the predictors. Once again the in-sample loss decreases steadily. The out-of-sample loss is higher and remains flat or perhaps drifts down for the first 6 PCs before rising dramatically. This would be consistent with the first 6 PCs being relatively well-defined in the training data, so that they still meaning in the validation sample.
 
 ```{r}
-results$pcOrdDF %>%
-  ggplot( aes(x = n, y = inloss)) +
-  geom_line( size=1.2, colour="blue") +
-  geom_line( aes(y = outloss), size=1.2, colour="red") +
-  labs( title = "Fig 3: Loss from Ordered Unscaled PCs",
+plot_in_out_loss(results$pcaOrderedDF) +
+  labs( title = "Fig 3: Loss from Orderedered Unscaled PCs",
         y     = "Loss",
-        x     = "Number of PCs") +
-  geom_text( x=35, y=0.58, label="In-sample", colour="blue") +
-  geom_text( x=35, y=1.00, label="Out-of-sample", colour="red")
+        x     = "Number of PCs (M)") 
 ```
 
 ## M most Predictive Scaled PCs
@@ -119,15 +110,10 @@ results$pcOrdDF %>%
 Figure 4 shows the loss when sets of M selected scaled principal components are used to predict cancer in a multivariable logistic regression. Although the in-sample loss decreases steadily the out-of-sample loss is always greater and it increases as more PCs are added. This seems to reflect the instability of the principal component analysis.
 
 ```{r}
-results$pcScdSelDF %>%
-  ggplot( aes(x = n, y = inloss)) +
-  geom_line( size=1.2, colour="blue") +
-  geom_line( aes(y = outloss), size=1.2, colour="red") +
+plot_in_out_loss(results$pcaScaledSelectedDF) +
   labs( title = "Fig 4: Loss from Selected Scaled PCs",
         y     = "Loss",
-        x     = "Number of PCs") +
-  geom_text( x=35, y=0.58, label="In-sample", colour="blue") +
-  geom_text( x=35, y=2.00, label="Out-of-sample", colour="red")
+        x     = "Number of PCs (M)")
 ```
 
 ## First M Scaled PCs
@@ -135,15 +121,10 @@ results$pcScdSelDF %>%
 Figure 5 shows the loss when the first M scaled principal components (those with the largest eigenvalues) are used as the predictors. Once again the in-sample loss decreases steadily. The out-of-sample loss is higher and remains flat or perhaps drifts down for the first 6 PCs before rising dramatically. This would be consistent with the first 6 PCs being relatively well-defined in the training data, so that they still meaning in the validation sample.
 
 ```{r}
-results$pcScdOrdDF %>%
-  ggplot( aes(x = n, y = inloss)) +
-  geom_line( size=1.2, colour="blue") +
-  geom_line( aes(y = outloss), size=1.2, colour="red") +
-  labs( title = "Fig 5: Loss from Ordered Scaled PCs",
+plot_in_out_loss(results$pcaScaledOrderedDF) +
+  labs( title = "Fig 5: Loss from Orderedered Scaled PCs",
         y     = "Loss",
-        x     = "Number of PCs") +
-  geom_text( x=35, y=0.58, label="In-sample", colour="blue") +
-  geom_text( x=35, y=1.00, label="Out-of-sample", colour="red")
+        x     = "Number of PCs (M)")
 ```
 
 ## Comparison of Methods
@@ -151,82 +132,53 @@ results$pcScdOrdDF %>%
 Figure 6 shows the in-sample losses of the five methods of feature selection. Based on the in-sample performance alone it appears that selected PCs give the smallest loss.
 
 ```{r}
-results$pbSelDF %>%
-  rename( probe = outloss) %>%
-  left_join( results$pcSelDF %>% rename( pcSel = outloss), by = "n") %>%
-  left_join( results$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
-  left_join( results$pcScdSelDF %>% rename( pcScdSel = outloss), by = "n") %>%
-  left_join( results$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
-  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
-               names_to = "method", values_to = "loss") %>%
-  mutate( source = str_replace(method, "loss", ""))  %>%
-  ggplot( aes(x = n, y = loss, colour=method)) +
-  geom_line( size=1.2) +
-  labs( title = "Fig 6: In-sample loss for the 3 feature selection methods",
-        y     = "Loss",
-        x     = "Number of predictors") +
-  theme( legend.position = c(0.15, 0.85))
+list( PBsel  = results$probeSelectedDF,
+      PCsel  = results$pcaSelectedDF,
+      PCord  = results$pcaOrderedDF,
+      sPCsel = results$pcaScaledSelectedDF,
+      sPCord = results$pcaScaledOrderedDF
+) %>%
+  plot_method_comparison(inloss) +
+    ggtitle("Fig 6: In-sample loss for the 5 feature selection methods")
 ```
 
 Figure 6a shows the same plot concentrated on 8 or fewer features.
 
 ```{r}
-results$pbSelDF %>%
-  rename( probe = outloss) %>%
-  left_join( results$pcSelDF %>% rename( pcSel = outloss), by = "n") %>%
-  left_join( results$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
-  left_join( results$pcScdSelDF %>% rename( pcScdSel = outloss), by = "n") %>%
-  left_join( results$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
-  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
-               names_to = "method", values_to = "loss") %>%
-  mutate( source = str_replace(method, "loss", ""))  %>%
-  filter( n <= 8 ) %>%
-  ggplot( aes(x = n, y = loss, colour=method)) +
-  geom_line( size=1.2) +
-  labs( title = "Fig 6a: In-sample loss for the 5 feature selection methods",
-        y     = "Loss",
-        x     = "Number of predictors") +
-  theme( legend.position = c(0.15, 0.85))
+list( PBsel  = results$probeSelectedDF     %>% slice(1:8),
+      PCsel  = results$pcaSelectedDF       %>% slice(1:8),
+      PCord  = results$pcaOrderedDF        %>% slice(1:8),
+      sPCsel = results$pcaScaledSelectedDF %>% slice(1:8),
+      sPCord = results$pcaScaledOrderedDF  %>% slice(1:8)
+) %>%
+  plot_method_comparison(inloss) +
+    ggtitle("Fig 6a: In-sample loss for the 5 feature selection methods")
 ```
 
 Figure 7 shows the out-of-sample performance of the 5 feature selection methods. None of the methods performs well with a large number of features, but selected PCs performs particularly poorly.
 
 ```{r}
-results$pbSelDF %>%
-  rename( probe = outloss) %>%
-  left_join( results$pcSelDF %>% rename( pcSel = outloss), by = "n") %>%
-  left_join( results$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
-  left_join( results$pcScdSelDF %>% rename( pcScdSel = outloss), by = "n") %>%
-  left_join( results$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
-  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
-               names_to = "method", values_to = "loss") %>%
-  mutate( source = str_replace(method, "loss", ""))  %>%
-  ggplot( aes(x = n, y = loss, colour=method)) +
-  geom_line( size=1.2) +
-  labs( title = "Fig 7: Out-of-sample loss for the 5 feature selection methods",
-        y     = "Loss",
-        x     = "Number of predictors") +
-  theme( legend.position = c(0.15, 0.85))
+list( PBsel  = results$probeSelectedDF,
+      PCsel  = results$pcaSelectedDF,
+      PCord  = results$pcaOrderedDF,
+      sPCsel = results$pcaScaledSelectedDF,
+      sPCord = results$pcaScaledOrderedDF
+) %>%
+  plot_method_comparison(outloss) +
+    ggtitle("Fig 7: Out-of-sample loss for the 5 feature selection methods")
 ```
 
 Figure 7a shows the same data as figure 7 but concentrates to 8 or fewer features. Probe selection improves the loss up to 4 features. Using the initial PCs improves the loss slowly for the first 6 features, but is never as good as the top 4 probes and selected PCs performs particularly poorly.
 
 ```{r}
-results$pbSelDF %>%
-  rename( probe = outloss) %>%
-  left_join( results$pcSelDF %>% rename( pcSel = outloss), by = "n") %>%
-  left_join( results$pcOrdDF %>% rename( pcOrd = outloss), by = "n") %>%
-  left_join( results$pcScdSelDF %>% rename( pcScdSel = outloss), by = "n") %>%
-  left_join( results$pcScdOrdDF %>% rename( pcScdOrd = outloss), by = "n") %>%
-  pivot_longer(c("probe", "pcSel", "pcOrd", "pcScdSel", "pcScdOrd"), 
-               names_to = "method", values_to = "loss") %>%
-  filter( n <= 8 ) %>%
-  ggplot( aes(x = n, y = loss, colour=method)) +
-  geom_line( size=1.2) +
-  labs( title = "Fig 7a: Out-of-sample loss for the 5 feature selection methods",
-        y     = "Loss",
-        x     = "Number of predictors") +
-  theme( legend.position = c(0.15, 0.85))
+list( PBsel  = results$probeSelectedDF     %>% slice(1:8),
+      PCsel  = results$pcaSelectedDF       %>% slice(1:8),
+      PCord  = results$pcaOrderedDF        %>% slice(1:8),
+      sPCsel = results$pcaScaledSelectedDF %>% slice(1:8),
+      sPCord = results$pcaScaledOrderedDF  %>% slice(1:8)
+) %>%
+  plot_method_comparison(outloss) +
+    ggtitle("Fig 7a: Out-of-sample loss for the 5 feature selection methods")
 ```
 
 

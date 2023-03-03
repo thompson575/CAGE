@@ -2,7 +2,9 @@
 title: 'CAGE: Summary of the Raw Data'
 author: "John Thompson"
 date: "2023-02-17"
-output: html_document
+output: 
+  html_document:
+    theme: cerulean
 ---
 
 ```{r setup, include=FALSE}

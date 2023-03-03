@@ -6,9 +6,12 @@
 # Date: 19 Feb 2023
 #
 library(tidyverse)
+library(glue)
 library(magrittr)
 
 home <- "C:/Projects/RCourse/Masterclass/CAGE/"
+
+source( file.path(home, "code/CAGE_functions.R") )
 
 # --------------------------------------------
 # Read exploratory subset of probes
@@ -38,7 +41,8 @@ predict(pca) %>%
   mutate( id = trainDF$id ) %>%
   relocate(id) %>%
   print() %T>%   
-  saveRDS(file.path(home, "data/rData/subset_train_pca_scores.rds")) -> scoreTrainDF
+  saveRDS(file.path(home, 
+                    "data/rData/subset_train_pca_scores.rds")) -> scoreTrainDF
 
 # --------------------------------------------
 # pca scores of the validation data
@@ -48,65 +52,43 @@ predict(pca, newdata=validDF) %>%
   mutate( id = validDF$id ) %>%
   relocate(id) %>%
   print() %T>%   
-  saveRDS(file.path(home, "data/rData/subset_valid_pca_scores.rds")) -> scoreValidDF
+  saveRDS(file.path(home, 
+                    "data/rData/subset_valid_pca_scores.rds")) -> scoreValidDF
+
 
 # ---------------------------------------------
 # Principal Components Stdev (root eigenvalues)
 #
-tibble( pc = 1:375,
-        sd = pca$sdev) %>%
-  ggplot( aes(x = pc, y = sd, xend = pc, yend = 0)) +
-  geom_segment() +
-  labs( title = "Standard deviatons of the Principal Components",
-        y     = "Standard deviation",
-        x     = "Principal Component Number")
-
+plot_eigenvalues(pca$sdev) +
+  ggtitle("Standard deviatons of the Principal Components")
 # ---------------------------------------------
 # Principal Components Percent Variance
 #
-tibble( pc = 1:375,
-        sd = pca$sdev) %>%
-  mutate( pct = 100 * sd * sd / sum(sd * sd)) %>%
-  ggplot( aes(x = pc, y = pct, xend = pc, yend = 0)) +
-  geom_segment() +
-  labs( title = "Standard deviatons of the Principal Components",
-        y     = "Percent Variance",
-        x     = "Principal Component Number")
-
+plot_eigenvalues(pca$sdev[1:50], pct = TRUE) +
+  ggtitle("Percent Explained by the Principal Components")
 
 # ---------------------------------------------
 # Illustrative plot of first 5 PCs by diagnosis
 # training data
 #
-scoreTrainDF %>%
-  select( id, PC1:PC5) %>%
-  pivot_longer(starts_with("PC"), names_to = "PC", 
-               values_to = "score") %>%
-  left_join( subjDF %>% 
-               select(id, diagnosis), by = "id") %>%
-  ggplot( aes(x = PC, y = score, fill = diagnosis)) +
-  geom_boxplot() +
-  labs(title = "Training data: PCA Scores 1 to 5 by diagnosis",
+glue( "PC{1:5}" ) %>%
+  boxplot_features( scoreTrainDF %>%
+                      left_join(subjDF, by = "id")) +
+  labs(title = "Training data: PCA Scores by diagnosis",
        y     = "Score",
-       x     = "Principal Component") +
-  theme( legend.position = c(.85, .9))
+       x     = "Principal Component")
 
 # ---------------------------------------------
 # Illustrative plot of first 5 PCs by diagnosis
 # validation data
 #
-scoreValidDF %>%
-  select( id, PC1:PC5) %>%
-  pivot_longer(starts_with("PC"), names_to = "PC", 
-               values_to = "score") %>%
-  left_join( subjDF %>% 
-               select(id, diagnosis), by = "id") %>%
-  ggplot( aes(x = PC, y = score, fill = diagnosis)) +
-  geom_boxplot() +
-  labs(title = "Validation data: PCA Scores 1 to 5 by diagnosis",
+glue( "PC{1:5}" ) %>%
+  boxplot_features( scoreValidDF %>%
+                      left_join(subjDF, by = "id")) +
+  labs(title = "Validation data: PCA Scores by diagnosis",
        y     = "Score",
-       x     = "Principal Component") +
-  theme( legend.position = c(.85, .9))
+       x     = "Principal Component")
+
 
 # =======================================================
 # SCALED PRCOMP .. PCA of Correlations
@@ -119,82 +101,61 @@ trainDF %>%
   select( -id) %>%
   as.matrix() %>% 
   prcomp(scale=TRUE) %T>%
-  saveRDS( file.path(home, "data/rData/subset_scaled_pca.rds")) -> pca
+  saveRDS( file.path(home, 
+                     "data/rData/subset_scaled_pca.rds")) -> pcaScaled
 
 # --------------------------------------------
 # pca scores of the training data
 #
-predict(pca) %>%
+predict(pcaScaled) %>%
   as_tibble() %>%
   mutate( id = trainDF$id ) %>%
   relocate(id) %>%
   print() %T>%   
-  saveRDS(file.path(home, "data/rData/subset_train_scaled_pca_scores.rds")) -> scoreTrainDF
+  saveRDS(file.path(home, 
+                    "data/rData/subset_train_scaled_pca_scores.rds")) -> scoreScaledTrainDF
 
 # --------------------------------------------
 # pca scores of the validation data
 #
-predict(pca, newdata=validDF) %>%
+predict(pcaScaled, newdata=validDF) %>%
   as_tibble() %>%
   mutate( id = validDF$id ) %>%
   relocate(id) %>%
   print() %T>%   
-  saveRDS(file.path(home, "data/rData/subset_valid_scaled_pca_scores.rds")) -> scoreValidDF
+  saveRDS(file.path(home, 
+                    "data/rData/subset_valid_scaled_pca_scores.rds")) -> scoreScaledValidDF
 
 # ---------------------------------------------
-# Principal Components Stdev (root eigenvalues)
+# Scaled Principal Components Stdev (root eigenvalues)
 #
-tibble( pc = 1:375,
-        sd = pca$sdev) %>%
-  ggplot( aes(x = pc, y = sd, xend = pc, yend = 0)) +
-  geom_segment() +
-  labs( title = "Standard deviatons of the Principal Components",
-        y     = "Standard deviation",
-        x     = "Principal Component Number")
-
+plot_eigenvalues(pcaScaled$sdev) +
+  ggtitle("Standard deviatons of the Scaled Principal Components")
 # ---------------------------------------------
 # Principal Components Percent Variance
 #
-tibble( pc = 1:375,
-        sd = pca$sdev) %>%
-  mutate( pct = 100 * sd * sd / sum(sd * sd)) %>%
-  ggplot( aes(x = pc, y = pct, xend = pc, yend = 0)) +
-  geom_segment() +
-  labs( title = "Standard deviatons of the Principal Components",
-        y     = "Percent Variance",
-        x     = "Principal Component Number")
-
+plot_eigenvalues(pcaScaled$sdev[1:50], pct = TRUE) +
+  ggtitle("Percent Explained by the Scaled Principal Components")
 
 # ---------------------------------------------
-# Illustrative plot of first 5 PCs by diagnosis
+# Illustrative plot of first 5 Scaled PCs by diagnosis
 # training data
 #
-scoreTrainDF %>%
-  select( id, PC1:PC5) %>%
-  pivot_longer(starts_with("PC"), names_to = "PC", 
-               values_to = "score") %>%
-  left_join( subjDF %>% 
-               select(id, diagnosis), by = "id") %>%
-  ggplot( aes(x = PC, y = score, fill = diagnosis)) +
-  geom_boxplot() +
-  labs(title = "Training data: PCA Scores 1 to 5 by diagnosis",
+glue( "PC{1:5}" ) %>%
+  boxplot_features( scoreScaledTrainDF %>%
+                      left_join(subjDF, by = "id")) +
+  labs(title = "Training data: Scaled PCA Scores by diagnosis",
        y     = "Score",
-       x     = "Principal Component") +
-  theme( legend.position = c(.85, .9))
+       x     = "Principal Component")
 
 # ---------------------------------------------
-# Illustrative plot of first 5 PCs by diagnosis
+# Illustrative plot of first 5 Scaled PCs by diagnosis
 # validation data
 #
-scoreValidDF %>%
-  select( id, PC1:PC5) %>%
-  pivot_longer(starts_with("PC"), names_to = "PC", 
-               values_to = "score") %>%
-  left_join( subjDF %>% 
-               select(id, diagnosis), by = "id") %>%
-  ggplot( aes(x = PC, y = score, fill = diagnosis)) +
-  geom_boxplot() +
-  labs(title = "Validation data: PCA Scores 1 to 5 by diagnosis",
+glue( "PC{1:5}" ) %>%
+  boxplot_features( scoreScaledValidDF %>%
+                      left_join(subjDF, by = "id")) +
+  labs(title = "Validation data: Scaled PCA Scores by diagnosis",
        y     = "Score",
-       x     = "Principal Component") +
-  theme( legend.position = c(.85, .9))
+       x     = "Principal Component")
+
