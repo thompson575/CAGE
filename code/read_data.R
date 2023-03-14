@@ -2,36 +2,46 @@
 # CAGE: Classification After Gene Expression
 #
 # Read the raw data and create 
-#   subjDF (subjects.rds) ... subject characteristics
-#   geDF (expression.rds) ... expression data
+#   subjects.rds   ... subject characteristics
+#   expression.rds ... expression data (geDF)
 # Sample 1000 probes to create an exploratory subset
-#   trainDF (training.rds)   ... AEGIS-1 data
-#   validDF (validation.rds) ... AEGIS-2 data
+#   training.rds   ... AEGIS-1 data
+#   validation.rds ... AEGIS-2 data
 #
 # Date: 19 Feb 2023
 #
 library(tidyverse)
 library(magrittr)
 
+URL  <- "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE210nnn/GSE210271/matrix/GSE210271_series_matrix.txt.gz"
+
 home <- "C:/Projects/RCourse/Masterclass/CAGE"
 file <- "data/rawData/GSE210271_series_matrix.txt.gz"
 
 # --------------------------------------------------
-# Read the file as lines of text
+# Download the series file from GEO. Save as localCopy
 #
-lines <- readLines( file.path(home, file) )
+localCopy <- file.path(home, file)
+
+download.file(URL, localCopy)
 
 # --------------------------------------------------
-# line 13 contains the subject identifiers
+# Read the file as lines of text for exploration
 #
-read.table(file.path(home, file),  sep = '\t', 
+lines <- readLines( localCopy )
+
+substr(lines[1:15], 1, 30)
+# --------------------------------------------------
+# line 14 contains the subject identifiers
+#
+read.table(localCopy,  sep = '\t', 
            header = FALSE, skip = 13, nrows = 1) %>%
-  { strsplit(.$V2, " ")[[1]] } -> id
+  { strsplit(.$V2, " ")[[1]] } -> subjectId
 
 # --------------------------------------------------
 # lines 41-45 contain the subject characteristics
 #
-read.table(file.path(home, file),  sep = '\t', 
+read.table(localCopy,  sep = '\t', 
                      header = FALSE, skip = 41, nrows = 5) %>%
   as_tibble() %>%
   select( -1) %>%
@@ -43,18 +53,18 @@ read.table(file.path(home, file),  sep = '\t',
   mutate( var = c("sex", "age", "smoking", "fev1", "diagnosis")) %>%
   pivot_longer(-var, names_to = "col", values_to = "data") %>%
   pivot_wider( names_from = var, values_from = data) %>%
-  mutate( id = id) %>%
+  mutate( id = subjectId ) %>%
   mutate( study = c(rep("AEGIS1", 375), rep("AEGIS2", 130))) %>%
   select(id, study, sex, age, smoking, diagnosis) %>%
   mutate( age = as.numeric(age)) %>%
-  print() %T>%
-  saveRDS( file.path(home, "data/rData/subjects.rds") ) -> subjDF
+  print() %>%
+  saveRDS( file.path(home, "data/rData/subjects.rds") ) 
 
 # --------------------------------------------------
 # lines 70-21754 contain gene expressions
 # 21685 probes for 505 subjects
 #
-read.table(file.path(home, file),  sep = '\t', 
+read.table(localCopy,  sep = '\t', 
            header = TRUE, skip = 70, nrows = 21685) %>%
   as_tibble() %>%
   print() %T>%
@@ -74,8 +84,8 @@ sample(1:21685, size = 1000, replace = FALSE) %>%
 geDF[rows, 1:376] %>%
   pivot_longer(-ID_REF, names_to = "id", values_to = "expression") %>%
   pivot_wider(names_from = ID_REF, values_from = expression) %>%
-  print() %T>%
-  saveRDS( file.path(home, "data/rData/training.rds") )-> trainDF
+  print() %>%
+  saveRDS( file.path(home, "data/rData/training.rds") ) 
 
 # -----------------------------------------------
 # USE AEGIS-2 (columns 377-506) as the validation data
@@ -84,6 +94,6 @@ geDF[rows, 1:376] %>%
 geDF[rows, c(1, 377:506)]  %>%
   pivot_longer(-ID_REF, names_to = "id", values_to = "expression") %>%
   pivot_wider(names_from = ID_REF, values_from = expression) %>%
-  print() %T>%
-  saveRDS( file.path(home, "data/rData/validation.rds") ) -> validDF
+  print() %>%
+  saveRDS( file.path(home, "data/rData/validation.rds") ) 
 
