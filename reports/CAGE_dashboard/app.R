@@ -57,8 +57,8 @@ server <- function(input, output) {
       tibble( diagnosis = trainDF$diagnosis,
               probe     = trainDF[[input$select]] ) %>%
         ggplot( aes(x=probe)) +
-        geom_histogram( bins=30 , fill = "steelblue") +
-        facet_grid(. ~ diagnosis) +
+        geom_histogram( bins=50 , fill = "steelblue") +
+        facet_grid( diagnosis ~ .) +
         labs( x = "Expression")
     })
     

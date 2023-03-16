@@ -51,15 +51,22 @@ Figure 1 shows that there were more cancer cases in AEGIS-1 (`r n[2]` vs `r n[1]
 ```{r}
 subjDF %>%
   ggplot( aes( x= study, fill = diagnosis)) +
-  geom_bar( position = "dodge") +
-  labs( title = "Fig 1: Numbers of cancer and benign cases in each study")
+  geom_bar( position = "dodge2") +
+  geom_text(stat="count", aes(label=after_stat(count)),
+            position=position_dodge2(width=0.9),
+            vjust=1) +
+  labs( title = "Fig 1: Numbers of cancer and benign cases in each study",
+        x = "")
 ```
 
 Figure 2 shows that there were rough;y twice as many women as men in both studies and both diagnostic groups.
 ```{r}
 subjDF %>%
   ggplot( aes( x= study, fill = diagnosis)) +
-  geom_bar( position = "dodge") +
+  geom_bar( position = "dodge2") +
+    geom_text(stat="count", aes(label=after_stat(count)),
+            position=position_dodge2(width=0.9),
+            vjust=1) +
   facet_grid( sex ~ . ) +
   labs( title = "Fig 2: Gender by diagnosis and study")
 ```
@@ -85,7 +92,10 @@ Figure 4 shoes that there were more former smokers than current smokers in both 
 ```{r}
 subjDF %>%
   ggplot( aes( x= study, fill = diagnosis)) +
-  geom_bar( position = "dodge") +
+  geom_bar( position = "dodge2") +
+  geom_text(stat="count", aes(label=after_stat(count)),
+            position=position_dodge2(width=0.9),
+            vjust=1) +
   facet_grid( smoking ~ . ) +
   labs( title = "Fig 4: Smoking status by diagnosis and study")
 ```
