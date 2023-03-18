@@ -13,21 +13,32 @@ library(glue)
 
 home <- "C:/Projects/RCourse/Masterclass/CAGE"
 
-source( file.path(home, "code/CAGE_functions.R") )
+source( file.path(home, "code/display_functions.R") )
 
-validDF <- readRDS( file.path(home, "data/rData/validation.rds"))
-trainDF <- readRDS( file.path(home, "data/rData/training.rds"))
-subjDF  <- readRDS( file.path(home, "data/rData/subjects.rds"))
-pca     <- readRDS( file.path(home, "data/rData/subset_pca.rds"))
-scoreTrainDF <- readRDS(file.path(home, "data/rData/subset_train_pca_scores.rds"))
-scoreValidDF <- readRDS(file.path(home, "data/rData/subset_valid_pca_scores.rds"))
+# --- file names
+FILE_VAL <- file.path(home, "data/cache/validation.rds")
+FILE_TRN <- file.path(home, "data/cache/training.rds")
+FILE_PAT <- file.path(home, "data/cache/patients.rds")
+FILE_VPC <- file.path(home, "data/cache/train_vpca.rds")
+FILE_VST <- file.path(home, "data/cache/train_vpca_scores.rds")
+FILE_VSV <- file.path(home, "data/cache/valid_vpca_scores.rds")
+FILE_CPC <- file.path(home, "data/cache/train_cpca.rds")
+FILE_CST <- file.path(home, "data/cache/train_cpca_scores.rds")
+FILE_CSV <- file.path(home, "data/cache/valid_cpca_scores.rds")
 
-pcaScaled     <- readRDS( file.path(home, "data/rData/subset_scaled_pca.rds"))
-scoreScaledTrainDF <- readRDS(file.path(home, "data/rData/subset_train_scaled_pca_scores.rds"))
-scoreScaledValidDF <- readRDS(file.path(home, "data/rData/subset_valid_scaled_pca_scores.rds"))
+patientDF     <- readRDS(FILE_PAT)
+trainDF       <- readRDS(FILE_TRN)
+validDF       <- readRDS(FILE_VAL)
+vpca          <- readRDS(FILE_VPC)
+vScoreTrainDF <- readRDS(FILE_VST)
+vScoreValidDF <- readRDS(FILE_VSV)
+cpca          <- readRDS(FILE_CPC)
+cScoreTrainDF <- readRDS(FILE_CST)
+cScoreValidDF <- readRDS(FILE_CSV)
 
 
-knitr::opts_chunk$set(echo = FALSE, fig.align = "center",
+knitr::opts_chunk$set(echo = FALSE, 
+                      fig.align = "center",
                       message=FALSE)
 ```
 
@@ -35,9 +46,9 @@ knitr::opts_chunk$set(echo = FALSE, fig.align = "center",
 
 CAGE (Classification After Gene Expression) explores ways of selecting features from a gene expression study for patient classification. In particular, it investigates the pros and cons of basing the classification on the principal components of the gene expression.
 
-## Subset of the Data
+## 1000 Probe Subset of the Data
 
-A random sample of 1000 probes was used to create a subset of the data that would enable quicker development of the code to investigate feature selection. The training data consist of the 1000 probes measured on the subjects from AEGIS-1 and the validation data consist of the same probes measured on the subjects from AEGIS-2.
+A random sample of 1000 probes was used to create a subset of the data that would enable quicker development of the code to investigate feature selection. The training data consist of the 1000 probes measured on the patients from AEGIS-1 and the validation data consist of the same probes measured on the patients from AEGIS-2.
 
 This report looks at the principal component analysis (PCA) of the training data.
 
@@ -46,14 +57,14 @@ This report looks at the principal component analysis (PCA) of the training data
 Figure 1 shows the percentage of the variance captured by each of the unscaled principal components.
 
 ```{r}
-plot_eigenvalues(pca$sdev[1:50], pct = TRUE ) +
+plot_eigenvalues(vpca$sdev[1:50], pct = TRUE ) +
   ggtitle("Fig 1: Percent Explained by the Unscaled PCs")
 ```
 
 A table of the cumulative percentage of the variance explained by the first 20 PCs shows that just 3 principal components captures over 50% of the variance in the expressions.
 ```{r}
 tibble( pc = 1:375,
-        sd = pca$sdev) %>%
+        sd = vpca$sdev) %>%
   mutate( var = sd * sd,
           pct = round(100 * var / sum(var), 1),
           var = round(var, 1),
@@ -63,23 +74,23 @@ tibble( pc = 1:375,
   print()
 ```
 
-Figure 2 shows the principal component scores of the subjects in the training data (AEGIS-1) for the first 5 PCs separated by diagnosis.
+Figure 2 shows the principal component scores of the patients in the training data (AEGIS-1) for the first 5 PCs separated by diagnosis.
 
 ```{r}
 glue( "PC{1:5}" ) %>%
-  boxplot_features( scoreTrainDF %>%
-                      left_join(subjDF, by = "id")) +
+  boxplot_features( vScoreTrainDF %>%
+                      left_join(patientDF, by = "id")) +
   labs(title = "Fig 2: Training data: Unscaled PCA Scores by diagnosis",
        y     = "Score",
        x     = "Principal Component")
 ```
 
-Figure 3 shows the principal component scores of the subjects in the validation data (AEGIS-2) for the first 5 PCs as derived from the training data.
+Figure 3 shows the principal component scores of the patients in the validation data (AEGIS-2) for the first 5 PCs as derived from the training data.
 
 ```{r}
 glue( "PC{1:5}" ) %>%
-  boxplot_features( scoreValidDF %>%
-                      left_join(subjDF, by = "id")) +
+  boxplot_features( vScoreValidDF %>%
+                      left_join(patientDF, by = "id")) +
   labs(title = "Fig 3: Validation data: Unscaled PCA Scores by diagnosis",
        y     = "Score",
        x     = "Principal Component")
@@ -91,14 +102,14 @@ glue( "PC{1:5}" ) %>%
 Figure 4 shows the percentage of the variance captured by each of the scaled principal components.
 
 ```{r}
-plot_eigenvalues(pca$sdev[1:50], pct = TRUE ) +
+plot_eigenvalues(cpca$sdev[1:50], pct = TRUE ) +
   ggtitle("Fig 4: Percent Explained by the Scaled PCs")
 ```
 
 A table of the cumulative percentage of the variance explained by the first 20 PCs shows that 5 scaled principal components are needed to capture over 50% of the variance.
 ```{r}
 tibble( pc = 1:375,
-        sd = pcaScaled$sdev) %>%
+        sd = cpca$sdev) %>%
   mutate( var = sd * sd,
           pct = round(100 * var / sum(var), 1),
           var = round(var, 1),
@@ -109,23 +120,23 @@ tibble( pc = 1:375,
   
 ```
 
-Figure 5 shows the principal component scores of the subjects in the training data (AEGIS-1) for the first 5 scaled PCs separated by diagnosis.
+Figure 5 shows the principal component scores of the patients in the training data (AEGIS-1) for the first 5 scaled PCs separated by diagnosis.
 
 ```{r}
 glue( "PC{1:5}" ) %>%
-  boxplot_features( scoreScaledTrainDF %>%
-                      left_join(subjDF, by = "id")) +
+  boxplot_features( cScoreTrainDF %>%
+                      left_join(patientDF, by = "id")) +
   labs(title = "Fig 5: Training data: Scaled PCA Scores by diagnosis",
        y     = "Score",
        x     = "Principal Component")
 ```
 
-Figure 6 shows the principal component scores of the subjects in the validation data (AEGIS-2) for the first 5 PCs as derived from the training data.
+Figure 6 shows the principal component scores of the patients in the validation data (AEGIS-2) for the first 5 PCs as derived from the training data.
 
 ```{r}
 glue( "PC{1:5}" ) %>%
-  boxplot_features( scoreScaledValidDF %>%
-                      left_join(subjDF, by = "id")) +
+  boxplot_features( cScoreValidDF %>%
+                      left_join(patientDF, by = "id")) +
   labs(title = "Fig 6: Validation data: Scaled PCA Scores by diagnosis",
        y     = "Score",
        x     = "Principal Component")

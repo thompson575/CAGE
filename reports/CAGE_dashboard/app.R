@@ -14,15 +14,15 @@ library(tidyverse)
 
 home <- "C:/Projects/RCourse/Masterclass/CAGE"
 
-subjDF  <- readRDS( file.path(home, "data/rData/subjects.rds") )
+patientDF  <- readRDS( file.path(home, "data/cache/patients.rds") )
 
-trainDF <- readRDS( file.path(home, "data/rData/training.rds"))
+trainDF <- readRDS( file.path(home, "data/cache/training.rds"))
 
 # names of the 1000 probes
 probes <- names(trainDF)[-1]
 
 trainDF %>%
-  left_join(subjDF, by = "id") -> trainDF
+  left_join(patientDF, by = "id") -> trainDF
 
 # proportion of Cancer cases in AEGIS-1
 pC <- sum(trainDF$diagnosis == "Cancer") / nrow(trainDF)

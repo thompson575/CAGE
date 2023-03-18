@@ -1,0 +1,49 @@
+---
+title: 'CAGE: Check Raw Data'
+author: "John Thompson"
+date: "2023-02-17"
+output: 
+  html_document:
+    theme: cerulean
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+
+home <- "C:/Projects/RCourse/Masterclass/CAGE"
+
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center",
+                      message=FALSE)
+```
+
+## Warning Messages
+
+```{r}
+readLines( file.path(home, "data/cache/read_data_log.txt") )
+```
+
+## Patient Data
+
+```{r}
+readRDS( file.path(home, "data/cache/patients.rds"))
+```
+
+## Expression Data
+
+```{r}
+readRDS( file.path(home, "data/cache/expression.rds"))
+```
+
+## Training Data
+
+```{r}
+readRDS( file.path(home, "data/cache/training.rds"))
+```
+
+## Validation Data
+
+```{r}
+readRDS( file.path(home, "data/cache/validation.rds"))
+```
+
+

@@ -12,11 +12,9 @@ library(tidyverse)
 
 home <- "C:/Projects/RCourse/Masterclass/CAGE"
 
-subjDF  <- readRDS( file.path(home, "data/rData/subjects.rds") )
+patientDF  <- readRDS( file.path(home, "data/cache/patients.rds") )
 
-geDF    <- readRDS( file.path(home, "data/rData/expression.rds") )
-
-trainDF <- readRDS( file.path(home, "data/rData/training.rds"))
+geDF    <- readRDS( file.path(home, "data/cache/expression.rds") )
 
 knitr::opts_chunk$set(echo = FALSE, fig.align = "center",
                       message=FALSE)
@@ -41,7 +39,7 @@ In Xu et al's study mRNA gene expression from 505 nasal epithelial brushings was
 ## Patient Characteristics
 
 ```{r}
-subjDF %>%
+patientDF %>%
   group_by(study, diagnosis) %>%
   count() %>%
   pull(n) -> n
@@ -49,7 +47,7 @@ subjDF %>%
 
 Figure 1 shows that there were more cancer cases in AEGIS-1 (`r n[2]` vs `r n[1]`) but almost equal numbers of cancer and benign cases in AEGIS-2 (`r n[4]` vs `r n[3]`). 
 ```{r}
-subjDF %>%
+patientDF %>%
   ggplot( aes( x= study, fill = diagnosis)) +
   geom_bar( position = "dodge2") +
   geom_text(stat="count", aes(label=after_stat(count)),
@@ -61,7 +59,7 @@ subjDF %>%
 
 Figure 2 shows that there were rough;y twice as many women as men in both studies and both diagnostic groups.
 ```{r}
-subjDF %>%
+patientDF %>%
   ggplot( aes( x= study, fill = diagnosis)) +
   geom_bar( position = "dodge2") +
     geom_text(stat="count", aes(label=after_stat(count)),
@@ -72,7 +70,7 @@ subjDF %>%
 ```
 
 ```{r}
-subjDF %>%
+patientDF %>%
   group_by(study, diagnosis) %>%
   summarise( a = round(mean(age),1) ) %>%
   pull(a) -> a
@@ -80,7 +78,7 @@ subjDF %>%
 Figure 3 shows a boxplot of the ages of the patients. The mean ages in AEGIS-1 were cancer `r a[2]` and benign `r a[1]` while in AEGIS-2 the corresponding mean ages were `r a[4]` and `r a[3]`.
 
 ```{r}
-subjDF %>%
+patientDF %>%
   ggplot( aes( x= study, y = age, fill = diagnosis )) +
   geom_boxplot() +
   labs( title = "Fig 3: Cancer cases tended to be slightly older")
@@ -90,7 +88,7 @@ Figure 4 shoes that there were more former smokers than current smokers in both 
 
 
 ```{r}
-subjDF %>%
+patientDF %>%
   ggplot( aes( x= study, fill = diagnosis)) +
   geom_bar( position = "dodge2") +
   geom_text(stat="count", aes(label=after_stat(count)),
@@ -111,7 +109,7 @@ geDF %>%
   select(1:6) %>%
   mutate( ID_REF = str_replace(ID_REF, "ENSG00000000", "")) %>%
   pivot_longer(-ID_REF, names_to="id", values_to="ge") %>%
-  left_join(subjDF, by = "id") %>%
+  left_join(patientDF, by = "id") %>%
   mutate( study = factor(study)) %>%
   ggplot( aes(x=id, y=ge)) +
   geom_boxplot(fill= "#00BFC4" ) +
@@ -127,7 +125,7 @@ geDF %>%
   slice(1:5) %>%
   mutate( ID_REF = str_replace(ID_REF, "ENSG00000000", "")) %>%
   pivot_longer(-ID_REF, names_to="id", values_to="ge") %>%
-  left_join(subjDF, by = "id") %>%
+  left_join(patientDF, by = "id") %>%
   mutate( study = factor(study)) %>%
   ggplot( aes(x=ID_REF, y=ge, fill=diagnosis)) +
   geom_boxplot() +
@@ -137,7 +135,7 @@ geDF %>%
 
 ## Subset of the Data
 
-A random sample of 1000 probes was used to create a subset of the data that would enable quicker development of the code to investigate feature selection. The training data consist of the 1000 probes measured on the subjects from AEGIS-1 and the validation data consist of the same probes measured on the subjects from AEGIS-2.
+A random sample of 1000 probes was used to create a subset of the data that would enable quicker development of the code to investigate feature selection. The training data consist of the 1000 probes measured on the patients from AEGIS-1 and the validation data consist of the same probes measured on the patients from AEGIS-2.
 
 This report looks at the principal component analysis (PCA) of the training data.
 

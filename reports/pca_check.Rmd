@@ -1,0 +1,141 @@
+---
+title: 'CAGE: Check PCA'
+author: "John Thompson"
+date: "2023-02-17"
+output: 
+  html_document:
+    theme: cerulean
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(glue)
+
+home <- "C:/Projects/RCourse/Masterclass/CAGE"
+
+source(file.path(home, "code/display_functions.R"))
+
+# --- file names
+FILE_VAL <- file.path(home, "data/cache/validation.rds")
+FILE_TRN <- file.path(home, "data/cache/training.rds")
+FILE_PAT <- file.path(home, "data/cache/patients.rds")
+FILE_VPC <- file.path(home, "data/cache/train_vpca.rds")
+FILE_VST <- file.path(home, "data/cache/train_vpca_scores.rds")
+FILE_VSV <- file.path(home, "data/cache/valid_vpca_scores.rds")
+FILE_CPC <- file.path(home, "data/cache/train_cpca.rds")
+FILE_CST <- file.path(home, "data/cache/train_cpca_scores.rds")
+FILE_CSV <- file.path(home, "data/cache/valid_cpca_scores.rds")
+FILE_LGF <- file.path(home, "data/cache/pca_log.txt")
+
+knitr::opts_chunk$set(echo = TRUE, 
+                      fig.align = "center",
+                      message=FALSE)
+# --- read patient data
+patientDF <- readRDS(FILE_PAT)
+```
+
+## Background
+
+PCA of the 1000 probe subset of the expression data.
+
+## Warning Messages
+
+```{r}
+readLines(FILE_LGF)
+```
+
+## Unscaled PCA
+
+```{r}
+vpca <- readRDS(FILE_VPC)
+
+# ---------------------------------------------
+# Principal Components Stdev (root eigenvalues)
+#
+plot_eigenvalues(vpca$sdev) +
+  ggtitle("Standard deviatons of the Principal Components")
+```
+
+## Unscaled PCA scores training data
+
+```{r}
+readRDS(FILE_VST) %>%
+  print() -> vScoreTrainDF
+# ---------------------------------------------
+# Illustrative plot of first 5 PCs by diagnosis
+# training data
+#
+glue("PC{1:5}") %>%
+  boxplot_features(vScoreTrainDF %>%
+                      left_join(patientDF, by = "id")) +
+  labs(title = "Training data: PCA Scores by diagnosis",
+       y     = "Score",
+       x     = "Principal Component")
+```
+
+## Unscaled PCA scores validation Data
+
+```{r}
+readRDS(FILE_VSV) %>%
+  print() -> vScoreValidDF
+
+# ---------------------------------------------
+# Illustrative plot of first 5 PCs by diagnosis
+# validation data
+#
+glue("PC{1:5}") %>%
+  boxplot_features(vScoreValidDF %>%
+                      left_join(patientDF, by = "id")) +
+  labs(title = "Validation data: PCA Scores by diagnosis",
+       y     = "Score",
+       x     = "Principal Component")
+```
+
+## Scaled PCA
+
+```{r}
+cpca <- readRDS(FILE_CPC)
+
+# ---------------------------------------------
+# Principal Components Stdev (root eigenvalues)
+#
+plot_eigenvalues(cpca$sdev) +
+  ggtitle("Standard deviatons of the Principal Components")
+```
+
+## Scaled PCA scores training data
+
+```{r}
+readRDS(FILE_CST) %>%
+  print() -> cScoreTrainDF
+# ---------------------------------------------
+# Illustrative plot of first 5 PCs by diagnosis
+# training data
+#
+glue("PC{1:5}") %>%
+  boxplot_features(cScoreTrainDF %>%
+                      left_join(patientDF, by = "id")) +
+  labs(title = "Training data: PCA Scores by diagnosis",
+       y     = "Score",
+       x     = "Principal Component")
+```
+
+## Scaled PCA scores validation Data
+
+```{r}
+readRDS(FILE_CSV) %>%
+  print() -> cScoreValidDF
+
+# ---------------------------------------------
+# Illustrative plot of first 5 PCs by diagnosis
+# validation data
+#
+glue("PC{1:5}") %>%
+  boxplot_features(cScoreValidDF %>%
+                      left_join(patientDF, by = "id")) +
+  labs(title = "Validation data: PCA Scores by diagnosis",
+       y     = "Score",
+       x     = "Principal Component")
+```
+
+

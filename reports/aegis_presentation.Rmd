@@ -1,12 +1,13 @@
 ---
 title: "Feature Extraction and Selection with Microarray Data"
 author: "John Thompson"
-date: "2023-02-23"
+date: "2023-03-29"
 output: ioslides_presentation
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set( echo=FALSE, message=FALSE, warning=FALSE, fig.align='center')
+knitr::opts_chunk$set( echo=FALSE, message=FALSE, 
+                       warning=FALSE, fig.align='center')
 ```
 
 ```{r }
@@ -14,11 +15,11 @@ library(tidyverse)
 
 home <- "C:/Projects/RCourse/Masterclass/CAGE/"
 
-source(file.path(home, "code/CAGE_functions.R"))
+source(file.path(home, "code/display_functions.R"))
 
-subjDF  <- readRDS( file.path(home, "data/rData/subjects.rds") )
+patientDF  <- readRDS( file.path(home, "data/cache/subjects.rds") )
 
-r <- readRDS(file.path(home, "data/dataStore/aegis1_classification_loss.rds"))
+r <- readRDS(file.path(home, "data/cache/aegis1_loss.rds"))
 ```
 
 ## Extraction and Selection
@@ -102,7 +103,7 @@ x6 -> {z1 z2 z4}
 Airway Epithelium Gene Expression in the Diagnosis of Lung Cancer
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, fig.align='center'}
-subjDF %>%
+patientDF %>%
   ggplot( aes( x= study, fill = diagnosis)) +
   geom_bar( position = "dodge") +
   labs( title = "Numbers of cancer and benign cases in each study")
@@ -137,10 +138,10 @@ This is equivalent to the log-likelihood for a logistic regression
 
 ```{r}
 list( probe  = r$probeSelectedDF,
-      PCsel  = r$pcaSelectedDF,
-      PCord  = r$pcaOrderedDF,
-      sPCsel = r$pcaScaledSelectedDF,
-      sPCord = r$pcaScaledOrderedDF)  %>%
+      vPCsel = r$vpcaSelectedDF,
+      vPCord = r$vpcaOrderedDF,
+      cPCsel = r$cpcaSelectedDF,
+      cPCord = r$cpcaOrderedDF)  %>%
   plot_method_comparison(inloss) +
   ggtitle("In-sample loss for the 5 feature selection methods")
 ```
@@ -148,11 +149,11 @@ list( probe  = r$probeSelectedDF,
 ## Results: In-sample 1-8 Features
 
 ```{r}
-list( probe  = r$probeSelectedDF     %>% slice(1:8),
-      PCsel  = r$pcaSelectedDF       %>% slice(1:8),
-      PCord  = r$pcaOrderedDF        %>% slice(1:8),
-      sPCsel = r$pcaScaledSelectedDF %>% slice(1:8),
-      sPCord = r$pcaScaledOrderedDF  %>% slice(1:8))  %>%
+list( probe  = r$probeSelectedDF %>% slice(1:8),
+      vPCsel = r$vpcaSelectedDF  %>% slice(1:8),
+      vPCord = r$vpcaOrderedDF   %>% slice(1:8),
+      cPCsel = r$cpcaSelectedDF  %>% slice(1:8),
+      cPCord = r$cpcaOrderedDF   %>% slice(1:8))  %>%
   plot_method_comparison(inloss) +
   ggtitle("In-sample loss for the 5 feature selection methods")
 
@@ -162,10 +163,10 @@ list( probe  = r$probeSelectedDF     %>% slice(1:8),
 
 ```{r}
 list( probe  = r$probeSelectedDF,
-      PCsel  = r$pcaSelectedDF,
-      PCord  = r$pcaOrderedDF,
-      sPCsel = r$pcaScaledSelectedDF,
-      sPCord = r$pcaScaledOrderedDF)  %>%
+      vPCsel = r$vpcaSelectedDF,
+      vPCord = r$vpcaOrderedDF,
+      cPCsel = r$cpcaSelectedDF,
+      cPCord = r$cpcaOrderedDF)  %>%
   plot_method_comparison(outloss) +
   ggtitle("Out-of-sample loss for the 5 feature selection methods")
 ```
@@ -174,11 +175,11 @@ list( probe  = r$probeSelectedDF,
 ## Results: Out-of-sample 1-8 Features
 
 ```{r}
-list( probe  = r$probeSelectedDF     %>% slice(1:8),
-      PCsel  = r$pcaSelectedDF       %>% slice(1:8),
-      PCord  = r$pcaOrderedDF        %>% slice(1:8),
-      sPCsel = r$pcaScaledSelectedDF %>% slice(1:8),
-      sPCord = r$pcaScaledOrderedDF  %>% slice(1:8))  %>%
+list( probe  = r$probeSelectedDF %>% slice(1:8),
+      vPCsel = r$vpcaSelectedDF  %>% slice(1:8),
+      vPCord = r$vpcaOrderedDF   %>% slice(1:8),
+      cPCsel = r$cpcaSelectedDF  %>% slice(1:8),
+      cPCord = r$cpcaOrderedDF   %>% slice(1:8))  %>%
   plot_method_comparison(outloss) +
   ggtitle("Out-of-sample loss for the 5 feature selection methods")
 ```
