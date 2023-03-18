@@ -16,33 +16,33 @@ home <- "C:/Projects/RCourse/Masterclass/CAGE"
 # -------------------------------------------------
 # dependencies - input files used by this script
 #
-FILE_EXN <- file.path(home, "data/cache/expression.rds")
-FILE_PAT <- file.path(home, "data/cache/patients.rds")
-FILE_DFN <- file.path(home, "code/display_functions.R")
-FILE_EA1 <- file.path(home, "data/cache/expression_aegis1.rds")
-FILE_EA2 <- file.path(home, "data/cache/expression_aegis2.rds")
-FILE_VPC <- file.path(home, "data/cache/aegis1_vpca.rds")
-FILE_VS1 <- file.path(home, "data/cache/aegis1_vpca_scores.rds")
-FILE_VS2 <- file.path(home, "data/cache/aegis2_vpca_scores.rds")
-FILE_CPC <- file.path(home, "data/cache/aegis1_cpca.rds")
-FILE_CS1 <- file.path(home, "data/cache/aegis1_cpca_scores.rds")
-FILE_CS2 <- file.path(home, "data/cache/aegis2_cpca_scores.rds")
-FILE_LS1 <- file.path(home, "data/cache/aegis1_loss.rds")
-FILE_LGF <- file.path(home, "data/cache/aegis1_log.txt")
+file_EXN <- file.path(home, "data/cache/expression.rds")
+file_PAT <- file.path(home, "data/cache/patients.rds")
+file_DFN <- file.path(home, "code/display_functions.R")
+file_EA1 <- file.path(home, "data/cache/expression_aegis1.rds")
+file_EA2 <- file.path(home, "data/cache/expression_aegis2.rds")
+file_VPC <- file.path(home, "data/cache/aegis1_vpca.rds")
+file_VS1 <- file.path(home, "data/cache/aegis1_vpca_scores.rds")
+file_VS2 <- file.path(home, "data/cache/aegis2_vpca_scores.rds")
+file_CPC <- file.path(home, "data/cache/aegis1_cpca.rds")
+file_CS1 <- file.path(home, "data/cache/aegis1_cpca_scores.rds")
+file_CS2 <- file.path(home, "data/cache/aegis2_cpca_scores.rds")
+file_LS1 <- file.path(home, "data/cache/aegis1_loss.rds")
+file_LGF <- file.path(home, "data/cache/aegis1_log.txt")
 
-source(DFN)
+source(file_DFN)
 
 
 knitr::opts_chunk$set(echo = TRUE, 
                       fig.align = "center",
                       message=FALSE)
 
-readRDS(PAT) %>%
+readRDS(file_PAT) %>%
   mutate(class = ifelse(diagnosis == "Cancer", 1, 0)) %>% 
   select(id, diagnosis, class) -> classDF
   
 
-readRDS(FILE_LS1) -> loss
+readRDS(file_LS1) -> loss
 ```
 
 ## Background
@@ -52,176 +52,156 @@ PCA of the 1000 probe subset of the expression data.
 ## Warning Messages
 
 ```{r}
-readLines(FILE_LGF)
+readLines(file_LGF)
 ```
 
-## Best Five probes
+## Unscaled PCA
 
 ```{r}
-print(loss$probeUniDF)
+vpca <- readRDS(file_VPC)
 
-# ----------------------------------------------------------
-# Plot of the 5 best probes in training and validation data
+# ---------------------------------------------
+# Principal Components Stdev (root eigenvalues)
 #
-loss$probeUniDF %>%
-  arrange(loss) %>%
-  slice(1:5) %>%
-  pull(x) %>%
-  boxplot_features(trainDF) +
-    ggtitle("Training Data: 5 most predictive probes")
+plot_eigenvalues(vpca$sdev) +
+  ggtitle("Standard deviatons of the Principal Components")
+```
 
+## Unscaled PCA scores training data
+
+```{r}
+readRDS(file_VS1) %>%
+  print() -> vScoreTrainDF
+# ---------------------------------------------
+# Illustrative plot of first 5 PCs by diagnosis
+# training data
+#
+glue("PC{1:5}") %>%
+  boxplot_features(vScoreTrainDF %>%
+                      left_join(classDF, by = "id")) +
+  labs(title = "Training data: PCA Scores by diagnosis",
+       y     = "Score",
+       x     = "Principal Component")
+```
+
+## Unscaled PCA scores validation Data
+
+```{r}
+readRDS(file_VS2) %>%
+  print() -> vScoreValidDF
+
+# ---------------------------------------------
+# Illustrative plot of first 5 PCs by diagnosis
+# validation data
+#
+glue("PC{1:5}") %>%
+  boxplot_features(vScoreValidDF %>%
+                      left_join(classDF, by = "id")) +
+  labs(title = "Validation data: PCA Scores by diagnosis",
+       y     = "Score",
+       x     = "Principal Component")
+```
+
+## Scaled PCA
+
+```{r}
+cpca <- readRDS(file_CPC)
+
+# ---------------------------------------------
+# Principal Components Stdev (root eigenvalues)
+#
+plot_eigenvalues(cpca$sdev) +
+  ggtitle("Standard deviatons of the Principal Components")
+```
+
+## Scaled PCA scores training data
+
+```{r}
+readRDS(file_CS1) %>%
+  print() -> cScoreTrainDF
+# ---------------------------------------------
+# Illustrative plot of first 5 PCs by diagnosis
+# training data
+#
+glue("PC{1:5}") %>%
+  boxplot_features(cScoreTrainDF %>%
+                      left_join(classDF, by = "id")) +
+  labs(title = "Training data: PCA Scores by diagnosis",
+       y     = "Score",
+       x     = "Principal Component")
+```
+
+## Scaled PCA scores validation Data
+
+```{r}
+readRDS(file_CS2) %>%
+  print() -> cScoreValidDF
+
+# ---------------------------------------------
+# Illustrative plot of first 5 PCs by diagnosis
+# validation data
+#
+glue("PC{1:5}") %>%
+  boxplot_features(cScoreValidDF %>%
+                      left_join(classDF, by = "id")) +
+  labs(title = "Validation data: PCA Scores by diagnosis",
+       y     = "Score",
+       x     = "Principal Component")
+```
+
+## Best Probes
+
+```{r}
 loss$probeUniDF %>%
+  print() %>%
   arrange(loss) %>%
-  slice(1:5) %>%
-  pull(x) %>%
-  boxplot_features(validDF) +
-  ggtitle("Validation Data: 5 most predictive probes")
+  print()
 ```
 
 ```{r}
 print(loss$probeSelectedDF)
-
-# ------------------------------------------------------------------
-# Plot of in-sample vs out-of-sample loss
-#
-plot_in_out_loss(loss$probeSelectedDF) +
-  labs(title = "Loss from Selected Probes",
-        y     = "Loss",
-        x     = "Number of Probes")
 ```
+
 
 ## Unscaled PCA: Most Predictive PCs
 
 ```{r}
-# ----------------------------------------------------------
-# Plot of the 5 best PCs in training and validation data
-#
 loss$vpcaUniDF %>%
+  print() %>%
   arrange(loss) %>%
-  slice(1:5) %>%
-  pull(x) %>%
-  boxplot_features(vScoreTrainDF) +
-  ggtitle("Training Data: 5 most predictive PCs")
+  print()
 
-loss$vpcaUniDF %>%
-  arrange(loss) %>%
-  slice(1:5) %>%
-  pull(x) %>%
-  boxplot_features(vScoreValidDF) +
-  ggtitle("Validation Data: 5 most predictive PCs")
+loss$vpcaSelectedDF %>%
+  print()
+```
 
-# ------------------------------------------------------------------
-# Plot of in-sample vs out-of-sample loss
-#
-plot_in_out_loss(loss$vpcaSelectedDF) +
-  labs(title = "Loss from Selected PCs",
-        y     = "Loss",
-        x     = "Number of PCs")
+```{r}
+loss$vpcaOrderedDF %>%
+  print()
 ```
 
 ## Unscaled PCA: First PCs
 
 ```{r}
-# ------------------------------------------------------------------
-# Plot of in-sample vs out-of-sample loss
-#
-plot_in_out_loss(loss$vpcaOrderedDF) +
-  labs(title = "Loss from First PCs",
-        y     = "Loss",
-        x     = "Number of PCs")
+loss$vpcaOrderedDF %>%
+  print()
 ```
 
 ## Scaled PCA: Most Predictive PCs
 
 ```{r}
-# ----------------------------------------------------------
-# Plot of the 5 best PCs in training and validation data
-#
 loss$cpcaUniDF %>%
+  print() %>%
   arrange(loss) %>%
-  slice(1:5) %>%
-  pull(x) %>%
-  boxplot_features(cScoreTrainDF) +
-  ggtitle("Training Data: 5 most predictive PCs")
+  print()
 
-loss$cpcaUniDF %>%
-  arrange(loss) %>%
-  slice(1:5) %>%
-  pull(x) %>%
-  boxplot_features(cScoreValidDF) +
-  ggtitle("Validation Data: 5 most predictive PCs")
-
-# ------------------------------------------------------------------
-# Plot of in-sample vs out-of-sample loss
-#
-plot_in_out_loss(loss$cpcaSelectedDF) +
-  labs(title = "Loss from Selected PCs",
-        y     = "Loss",
-        x     = "Number of PCs")
+loss$cpcaSelectedDF %>%
+  print()
 ```
 
 ## Scaled PCA: First PCs
 
 ```{r}
-# ------------------------------------------------------------------
-# Plot of in-sample vs out-of-sample loss
-#
-plot_in_out_loss(loss$cpcaOrderedDF) +
-  labs(title = "Loss from First PCs",
-        y     = "Loss",
-        x     = "Number of PCs")
-```
-
-## In-sample (Training) Loss: Comparison of the 5 Methods
-
-```{r}
-# ---------------------------------------------
-# Plot in-sample loss for the five methods M=1-50
-#
-list(probe  = loss$probeSelectedDF,
-      PCsel  = loss$vpcaSelectedDF,
-      PCord  = loss$vpcaOrderedDF,
-      sPCsel = loss$cpcaSelectedDF,
-      sPCord = loss$cpcaOrderedDF)  %>%
-  plot_method_comparison(inloss) +
-  ggtitle("In-sample loss for the 5 feature selection methods")
-
-# ---------------------------------------------
-# Plot in-sample loss for the five methods M=1-8
-#
-list(probe  = loss$probeSelectedDF %>% slice(1:8),
-      PCsel  = loss$vpcaSelectedDF  %>% slice(1:8),
-      PCord  = loss$vpcaOrderedDF   %>% slice(1:8),
-      sPCsel = loss$cpcaSelectedDF  %>% slice(1:8),
-      sPCord = loss$cpcaOrderedDF   %>% slice(1:8))  %>%
-  plot_method_comparison(inloss) +
-  ggtitle("In-sample loss for the 5 feature selection methods")
-```
-
-## Out-of-sample (Validation) Loss: Comparison of the 5 Methods
-
-
-```{r}
-# ---------------------------------------------
-# Plot out-of-sample loss for the five methods M=1-50
-#
-list(probe  = loss$probeSelectedDF,
-      PCsel  = loss$vpcaSelectedDF,
-      PCord  = loss$vpcaOrderedDF,
-      sPCsel = loss$cpcaSelectedDF,
-      sPCord = loss$cpcaOrderedDF)  %>%
-  plot_method_comparison(outloss) +
-  ggtitle("Out-of-sample loss for the 5 feature selection methods")
-
-
-# ---------------------------------------------
-# Plot out-of-sample loss for the five methods M=1-8
-#
-list(probe  = loss$probeSelectedDF %>% slice(1:8),
-      PCsel  = loss$vpcaSelectedDF  %>% slice(1:8),
-      PCord  = loss$vpcaOrderedDF   %>% slice(1:8),
-      sPCsel = loss$cpcaSelectedDF  %>% slice(1:8),
-      sPCord = loss$cpcaOrderedDF   %>% slice(1:8))  %>%
-  plot_method_comparison(outloss) +
-  ggtitle("Out-of-sample loss for the 5 feature selection methods")
+loss$cpcaOrderedDF %>%
+  print()
 ```

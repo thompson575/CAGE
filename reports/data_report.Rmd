@@ -12,9 +12,11 @@ library(tidyverse)
 
 home <- "C:/Projects/RCourse/Masterclass/CAGE"
 
-patientDF  <- readRDS( file.path(home, "data/cache/patients.rds") )
+file_EXN <- file.path(home, "data/cache/expression.rds")
+file_PAT <- file.path(home, "data/cache/patients.rds")
 
-geDF    <- readRDS( file.path(home, "data/cache/expression.rds") )
+patientDF <- readRDS(file_PAT)
+geDF      <- readRDS(file_EXN)
 
 knitr::opts_chunk$set(echo = FALSE, fig.align = "center",
                       message=FALSE)

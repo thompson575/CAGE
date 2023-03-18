@@ -16,51 +16,51 @@ home <- "C:/Projects/RCourse/Masterclass/CAGE"
 # vpca .. PCA of covariance, scale = FALSE
 # cpca .. PCA of correlations, scale = TRUE
 #
-FILE_VAL <- file.path(home, "data/cache/validation.rds")
-FILE_TRN <- file.path(home, "data/cache/training.rds")
-FILE_PAT <- file.path(home, "data/cache/patients.rds")
-FILE_VST <- file.path(home, "data/cache/train_vpca_scores.rds")
-FILE_VSV <- file.path(home, "data/cache/valid_vpca_scores.rds")
-FILE_CST <- file.path(home, "data/cache/train_cpca_scores.rds")
-FILE_CSV <- file.path(home, "data/cache/valid_cpca_scores.rds")
-FILE_CFN <- file.path(home, "code/calculation_functions.R")
+file_VAL <- file.path(home, "data/cache/validation.rds")
+file_TRN <- file.path(home, "data/cache/training.rds")
+file_PAT <- file.path(home, "data/cache/patients.rds")
+file_VST <- file.path(home, "data/cache/train_vpca_scores.rds")
+file_VSV <- file.path(home, "data/cache/valid_vpca_scores.rds")
+file_CST <- file.path(home, "data/cache/train_cpca_scores.rds")
+file_CSV <- file.path(home, "data/cache/valid_cpca_scores.rds")
+file_CFN <- file.path(home, "code/calculation_functions.R")
 # -------------------------------------------------
 # targets - output files created by this script
 #
-FILE_FLS <- file.path(home, "data/cache/feature_loss.rds")
-FILE_LGF <- file.path(home, "data/cache/features_log.txt")
+file_FLS <- file.path(home, "data/cache/feature_loss.rds")
+file_LGF <- file.path(home, "data/cache/features_log.txt")
 # --------------------------------------------------
 # Divert warning messages to a log file
 #
-logFile <- file(FILE_LGF, open = "wt")
+logFile <- file(file_LGF, open = "wt")
 sink(logFile, type = "message")
 
-source(FILE_CFN)
+source(file_CFN)
 
 # --------------------------------------------
 # Read data on the 1000 probes
 # add diagnosis from patientDF and class: 0=Benign 1=Cancer
 #
-readRDS(FILE_PAT) %>%
+readRDS(file_PAT) %>%
   mutate(class = ifelse(diagnosis == "Cancer", 1, 0)) %>% 
   select(id, diagnosis, class) -> classDF
   
-readRDS(FILE_VAL) %>%
+readRDS(file_VAL) %>%
   left_join(classDF, by = "id")  -> validDF 
 
-readRDS(FILE_TRN) %>%
+readRDS(file_TRN) %>%
   left_join(classDF, by = "id") -> trainDF 
 
-readRDS(FILE_VST) %>%
+readRDS(file_VST) %>%
   left_join(classDF, by = "id") -> vScoreTrainDF 
 
-readRDS(FILE_VSV) %>%
+readRDS(file_VSV) %>%
   left_join(classDF, by = "id") -> vScoreValidDF 
 
-readRDS(FILE_CST) %>%
+readRDS(file_CST) %>%
   left_join(classDF, by = "id") -> cScoreTrainDF 
 
-readRDS(FILE_CSV) %>%
+readRDS(file_CSV) %>%
   left_join(classDF, by = "id") -> cScoreValidDF 
 
 # ------------------------------------------------
@@ -151,7 +151,7 @@ list(probeUniDF      = probeUniDF,
      cpcaUniDF       = cpcaUniDF, 
      cpcaSelectedDF  = cpcaSelectedDF, 
      cpcaOrderedDF   = cpcaOrderedDF) %>%
-  saveRDS(FILE_FLS)
+  saveRDS(file_FLS)
 
 # -----------------------------------------------
 # Close the log file

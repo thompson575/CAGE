@@ -16,14 +16,14 @@ home <- "C:/Projects/RCourse/Masterclass/CAGE"
 # -------------------------------------------------
 # dependencies - input files used by this script
 #
-FILE_FLS <- file.path(home, "data/cache/feature_loss.rds")
-FILE_LGF <- file.path(home, "data/cache/features_log.txt")
+file_FLS <- file.path(home, "data/cache/feature_loss.rds")
+file_LGF <- file.path(home, "data/cache/features_log.txt")
 
 knitr::opts_chunk$set(echo = TRUE, 
                       fig.align = "center",
                       message=FALSE)
 
-readRDS(FILE_FLS) -> loss
+readRDS(file_FLS) -> loss
 ```
 
 ## Background
@@ -33,10 +33,10 @@ PCA of the 1000 probe subset of the expression data.
 ## Warning Messages
 
 ```{r}
-readLines(FILE_LGF)
+readLines(file_LGF)
 ```
 
-## Best Five probes
+## Best Probes
 
 ```{r}
 loss$probeUniDF %>%

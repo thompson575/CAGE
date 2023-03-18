@@ -16,22 +16,22 @@ home <- "C:/Projects/RCourse/Masterclass/CAGE"
 source(file.path(home, "code/display_functions.R"))
 
 # --- file names
-FILE_VAL <- file.path(home, "data/cache/validation.rds")
-FILE_TRN <- file.path(home, "data/cache/training.rds")
-FILE_PAT <- file.path(home, "data/cache/patients.rds")
-FILE_VPC <- file.path(home, "data/cache/train_vpca.rds")
-FILE_VST <- file.path(home, "data/cache/train_vpca_scores.rds")
-FILE_VSV <- file.path(home, "data/cache/valid_vpca_scores.rds")
-FILE_CPC <- file.path(home, "data/cache/train_cpca.rds")
-FILE_CST <- file.path(home, "data/cache/train_cpca_scores.rds")
-FILE_CSV <- file.path(home, "data/cache/valid_cpca_scores.rds")
-FILE_LGF <- file.path(home, "data/cache/pca_log.txt")
+file_VAL <- file.path(home, "data/cache/validation.rds")
+file_TRN <- file.path(home, "data/cache/training.rds")
+file_PAT <- file.path(home, "data/cache/patients.rds")
+file_VPC <- file.path(home, "data/cache/train_vpca.rds")
+file_VST <- file.path(home, "data/cache/train_vpca_scores.rds")
+file_VSV <- file.path(home, "data/cache/valid_vpca_scores.rds")
+file_CPC <- file.path(home, "data/cache/train_cpca.rds")
+file_CST <- file.path(home, "data/cache/train_cpca_scores.rds")
+file_CSV <- file.path(home, "data/cache/valid_cpca_scores.rds")
+file_LGF <- file.path(home, "data/cache/pca_log.txt")
 
 knitr::opts_chunk$set(echo = TRUE, 
                       fig.align = "center",
                       message=FALSE)
 # --- read patient data
-patientDF <- readRDS(FILE_PAT)
+patientDF <- readRDS(file_PAT)
 ```
 
 ## Background
@@ -41,13 +41,13 @@ PCA of the 1000 probe subset of the expression data.
 ## Warning Messages
 
 ```{r}
-readLines(FILE_LGF)
+readLines(file_LGF)
 ```
 
 ## Unscaled PCA
 
 ```{r}
-vpca <- readRDS(FILE_VPC)
+vpca <- readRDS(file_VPC)
 
 # ---------------------------------------------
 # Principal Components Stdev (root eigenvalues)
@@ -59,7 +59,7 @@ plot_eigenvalues(vpca$sdev) +
 ## Unscaled PCA scores training data
 
 ```{r}
-readRDS(FILE_VST) %>%
+readRDS(file_VST) %>%
   print() -> vScoreTrainDF
 # ---------------------------------------------
 # Illustrative plot of first 5 PCs by diagnosis
@@ -76,7 +76,7 @@ glue("PC{1:5}") %>%
 ## Unscaled PCA scores validation Data
 
 ```{r}
-readRDS(FILE_VSV) %>%
+readRDS(file_VSV) %>%
   print() -> vScoreValidDF
 
 # ---------------------------------------------
@@ -94,7 +94,7 @@ glue("PC{1:5}") %>%
 ## Scaled PCA
 
 ```{r}
-cpca <- readRDS(FILE_CPC)
+cpca <- readRDS(file_CPC)
 
 # ---------------------------------------------
 # Principal Components Stdev (root eigenvalues)
@@ -106,7 +106,7 @@ plot_eigenvalues(cpca$sdev) +
 ## Scaled PCA scores training data
 
 ```{r}
-readRDS(FILE_CST) %>%
+readRDS(file_CST) %>%
   print() -> cScoreTrainDF
 # ---------------------------------------------
 # Illustrative plot of first 5 PCs by diagnosis
@@ -123,7 +123,7 @@ glue("PC{1:5}") %>%
 ## Scaled PCA scores validation Data
 
 ```{r}
-readRDS(FILE_CSV) %>%
+readRDS(file_CSV) %>%
   print() -> cScoreValidDF
 
 # ---------------------------------------------

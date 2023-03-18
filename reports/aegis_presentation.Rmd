@@ -17,9 +17,9 @@ home <- "C:/Projects/RCourse/Masterclass/CAGE/"
 
 source(file.path(home, "code/display_functions.R"))
 
-patientDF  <- readRDS( file.path(home, "data/cache/subjects.rds") )
+patientDF  <- readRDS( file.path(home, "data/cache/patients.rds") )
 
-r <- readRDS(file.path(home, "data/cache/aegis1_loss.rds"))
+loss <- readRDS(file.path(home, "data/cache/aegis1_loss.rds"))
 ```
 
 ## Extraction and Selection
@@ -137,11 +137,11 @@ This is equivalent to the log-likelihood for a logistic regression
 ## Results: In-sample 1-50 Features
 
 ```{r}
-list( probe  = r$probeSelectedDF,
-      vPCsel = r$vpcaSelectedDF,
-      vPCord = r$vpcaOrderedDF,
-      cPCsel = r$cpcaSelectedDF,
-      cPCord = r$cpcaOrderedDF)  %>%
+list( probe  = loss$probeSelectedDF,
+      vPCsel = loss$vpcaSelectedDF,
+      vPCord = loss$vpcaOrderedDF,
+      cPCsel = loss$cpcaSelectedDF,
+      cPCord = loss$cpcaOrderedDF)  %>%
   plot_method_comparison(inloss) +
   ggtitle("In-sample loss for the 5 feature selection methods")
 ```
@@ -149,11 +149,11 @@ list( probe  = r$probeSelectedDF,
 ## Results: In-sample 1-8 Features
 
 ```{r}
-list( probe  = r$probeSelectedDF %>% slice(1:8),
-      vPCsel = r$vpcaSelectedDF  %>% slice(1:8),
-      vPCord = r$vpcaOrderedDF   %>% slice(1:8),
-      cPCsel = r$cpcaSelectedDF  %>% slice(1:8),
-      cPCord = r$cpcaOrderedDF   %>% slice(1:8))  %>%
+list( probe  = loss$probeSelectedDF %>% slice(1:8),
+      vPCsel = loss$vpcaSelectedDF  %>% slice(1:8),
+      vPCord = loss$vpcaOrderedDF   %>% slice(1:8),
+      cPCsel = loss$cpcaSelectedDF  %>% slice(1:8),
+      cPCord = loss$cpcaOrderedDF   %>% slice(1:8))  %>%
   plot_method_comparison(inloss) +
   ggtitle("In-sample loss for the 5 feature selection methods")
 
@@ -162,11 +162,11 @@ list( probe  = r$probeSelectedDF %>% slice(1:8),
 ## Results: Out-of-sample 1-50 Features
 
 ```{r}
-list( probe  = r$probeSelectedDF,
-      vPCsel = r$vpcaSelectedDF,
-      vPCord = r$vpcaOrderedDF,
-      cPCsel = r$cpcaSelectedDF,
-      cPCord = r$cpcaOrderedDF)  %>%
+list( probe  = loss$probeSelectedDF,
+      vPCsel = loss$vpcaSelectedDF,
+      vPCord = loss$vpcaOrderedDF,
+      cPCsel = loss$cpcaSelectedDF,
+      cPCord = loss$cpcaOrderedDF)  %>%
   plot_method_comparison(outloss) +
   ggtitle("Out-of-sample loss for the 5 feature selection methods")
 ```
@@ -175,11 +175,11 @@ list( probe  = r$probeSelectedDF,
 ## Results: Out-of-sample 1-8 Features
 
 ```{r}
-list( probe  = r$probeSelectedDF %>% slice(1:8),
-      vPCsel = r$vpcaSelectedDF  %>% slice(1:8),
-      vPCord = r$vpcaOrderedDF   %>% slice(1:8),
-      cPCsel = r$cpcaSelectedDF  %>% slice(1:8),
-      cPCord = r$cpcaOrderedDF   %>% slice(1:8))  %>%
+list( probe  = loss$probeSelectedDF %>% slice(1:8),
+      vPCsel = loss$vpcaSelectedDF  %>% slice(1:8),
+      vPCord = loss$vpcaOrderedDF   %>% slice(1:8),
+      cPCsel = loss$cpcaSelectedDF  %>% slice(1:8),
+      cPCord = loss$cpcaOrderedDF   %>% slice(1:8))  %>%
   plot_method_comparison(outloss) +
   ggtitle("Out-of-sample loss for the 5 feature selection methods")
 ```

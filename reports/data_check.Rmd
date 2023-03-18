@@ -14,36 +14,42 @@ home <- "C:/Projects/RCourse/Masterclass/CAGE"
 
 knitr::opts_chunk$set(echo = TRUE, fig.align = "center",
                       message=FALSE)
+
+file_EXN <- file.path(home, "data/cache/expression.rds")
+file_PAT <- file.path(home, "data/cache/patients.rds")
+file_VAL <- file.path(home, "data/cache/validation.rds")
+file_TRN <- file.path(home, "data/cache/training.rds")
+file_LGF <- file.path(home, "data/cache/read_data_log.txt")
 ```
 
 ## Warning Messages
 
 ```{r}
-readLines( file.path(home, "data/cache/read_data_log.txt") )
+readLines(file_LGF )
 ```
 
 ## Patient Data
 
 ```{r}
-readRDS( file.path(home, "data/cache/patients.rds"))
+readRDS(file_PAT)
 ```
 
 ## Expression Data
 
 ```{r}
-readRDS( file.path(home, "data/cache/expression.rds"))
+readRDS(file_EXN)
 ```
 
 ## Training Data
 
 ```{r}
-readRDS( file.path(home, "data/cache/training.rds"))
+readRDS(file_TRN)
 ```
 
 ## Validation Data
 
 ```{r}
-readRDS( file.path(home, "data/cache/validation.rds"))
+readRDS(file_VAL)
 ```
 
 

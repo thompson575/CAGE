@@ -39,9 +39,9 @@ home <- "C:/Projects/RCourse/Masterclass/CAGE/"
 
 source(file.path(home, "code/display_functions.R"))
 
-patientDF  <- readRDS( file.path(home, "data/cache/subjects.rds") )
+patientDF  <- readRDS( file.path(home, "data/cache/patients.rds") )
 
-r <- readRDS(file.path(home, "data/cache/aegis1_loss.rds"))
+loss <- readRDS(file.path(home, "data/cache/aegis1_loss.rds"))
 ```
 
 # Mehtods
@@ -73,7 +73,7 @@ The training data are used to define the principal component, make the selection
 Figure 1 shows the loss when sets of M probes are used to predict cancer in a multiple logistic regression. The in-sample loss declines steadily as more probes are used, but the out-of-sample loss increases dramatically after a 4 probe model.
 
 ```{r}
-plot_in_out_loss(r$probeSelectedDF) +
+plot_in_out_loss(loss$probeSelectedDF) +
   labs( title = "Figure 1: Loss from Selected Probes",
         y     = "Loss",
         x     = "Number of Probes")
@@ -83,7 +83,7 @@ plot_in_out_loss(r$probeSelectedDF) +
 The first 4 selected probes are show below. Here the loss refers to the loss in a univarable logistic regression using only that probe.
 
 ```{r}
-r$probeUniDF %>%
+loss$probeUniDF %>%
   arrange( loss ) %>%
   slice(1:4) %>%
   rename( probe = x) %>%
@@ -102,7 +102,7 @@ Manual searching of the Ensembl database at https://www.ensembl.org/Homo_sapiens
 Figure 2 shows the loss when sets of M selected principal components are used to predict cancer in a multiple logistic regression. Although the in-sample loss decreases steadily the out-of-sample loss is always greater and it increases as more PCs are added. This seems to reflect the instability of the principal component analysis.
 
 ```{r}
-plot_in_out_loss(r$vpcaSelectedDF) +
+plot_in_out_loss(loss$vpcaSelectedDF) +
   labs( title = "Figure 2: Loss from Selected unscaled PCs",
         y     = "Loss",
         x     = "Number of PCs")
@@ -113,7 +113,7 @@ plot_in_out_loss(r$vpcaSelectedDF) +
 Figure 3 shows the loss when the first M principal components (those with the largest eigenvalues) are used as the predictors. Once again the in-sample loss decreases steadily. The out-of-sample loss is higher and remains flat or perhaps drifts down for the first 6 PCs before rising dramatically. This would be consistent with the first 6 PCs being relatively well-defined in the training data, so that they still meaning in the validation sample.
 
 ```{r}
-plot_in_out_loss(r$vpcaOrderedDF) +
+plot_in_out_loss(loss$vpcaOrderedDF) +
   labs( title = "Figure 3: Loss from Ordered Unscaled PCs",
         y     = "Loss",
         x     = "Number of PCs")
@@ -124,7 +124,7 @@ plot_in_out_loss(r$vpcaOrderedDF) +
 Figure 4 shows the loss when sets of M selected scaled principal components are used to predict cancer in a multiple logistic regression. Although the in-sample loss decreases steadily the out-of-sample loss is always greater and it increases as more PCs are added. This seems to reflect the instability of the principal component analysis.
 
 ```{r}
-plot_in_out_loss(r$cpcaSelectedDF) +
+plot_in_out_loss(loss$cpcaSelectedDF) +
   labs( title = "Figure 4: Loss from Selected scaled PCs",
         y     = "Loss",
         x     = "Number of PCs")
@@ -135,7 +135,7 @@ plot_in_out_loss(r$cpcaSelectedDF) +
 Figure 5 shows the loss when the first M scaled principal components (those with the largest eigenvalues) are used as the predictors. Once again the in-sample loss decreases steadily. The out-of-sample loss is higher and remains flat or perhaps drifts down for the first 6 PCs before rising dramatically. This would be consistent with the first 6 PCs being relatively well-defined in the training data, so that they still meaning in the validation sample.
 
 ```{r}
-plot_in_out_loss(r$cpcaOrderedDF) +
+plot_in_out_loss(loss$cpcaOrderedDF) +
   labs( title = "Figure 4: Loss from Ordered scaled PCs",
         y     = "Loss",
         x     = "Number of PCs")
@@ -146,19 +146,19 @@ plot_in_out_loss(r$cpcaOrderedDF) +
 Figure 6 shows the in-sample losses of the five methods of feature selection. Based on the in-sample performance alone it appears that selected PCs give the smallest loss.
 
 ```{r}
-list( probe  = r$probeSelectedDF,
-      PCsel  = r$vpcaSelectedDF,
-      PCord  = r$vpcaOrderedDF,
-      sPCsel = r$cpcaSelectedDF,
-      sPCord = r$cpcaOrderedDF)  %>%
+list( probe  = loss$probeSelectedDF,
+      PCsel  = loss$vpcaSelectedDF,
+      PCord  = loss$vpcaOrderedDF,
+      sPCsel = loss$cpcaSelectedDF,
+      sPCord = loss$cpcaOrderedDF)  %>%
   plot_method_comparison(inloss) +
   ggtitle("Features 1 to 50") -> p1
 
-list( probe  = r$probeSelectedDF     %>% slice(1:8),
-      PCsel  = r$vpcaSelectedDF       %>% slice(1:8),
-      PCord  = r$vpcaOrderedDF        %>% slice(1:8),
-      sPCsel = r$cpcaSelectedDF %>% slice(1:8),
-      sPCord = r$cpcaOrderedDF  %>% slice(1:8))  %>%
+list( probe  = loss$probeSelectedDF     %>% slice(1:8),
+      PCsel  = loss$vpcaSelectedDF       %>% slice(1:8),
+      PCord  = loss$vpcaOrderedDF        %>% slice(1:8),
+      sPCsel = loss$cpcaSelectedDF %>% slice(1:8),
+      sPCord = loss$cpcaOrderedDF  %>% slice(1:8))  %>%
   plot_method_comparison(inloss) +
   ggtitle("Features 1 to 8") +
   theme( legend.position = "none" ) -> p2
@@ -171,19 +171,19 @@ list( probe  = r$probeSelectedDF     %>% slice(1:8),
 Figure 7 shows the out-of-sample performance of the 5 feature selection methods. None of the methods performs well with a large number of features, but selected PCs performs particularly poorly.
 
 ```{r}
-list( probe  = r$probeSelectedDF,
-      PCsel  = r$vpcaSelectedDF,
-      PCord  = r$vpcaOrderedDF,
-      sPCsel = r$cpcaSelectedDF,
-      sPCord = r$cpcaOrderedDF)  %>%
+list( probe  = loss$probeSelectedDF,
+      PCsel  = loss$vpcaSelectedDF,
+      PCord  = loss$vpcaOrderedDF,
+      sPCsel = loss$cpcaSelectedDF,
+      sPCord = loss$cpcaOrderedDF)  %>%
   plot_method_comparison(outloss) +
   ggtitle("Features 1 to 50") -> p1
 
-list( probe  = r$probeSelectedDF     %>% slice(1:8),
-      PCsel  = r$vpcaSelectedDF       %>% slice(1:8),
-      PCord  = r$vpcaOrderedDF        %>% slice(1:8),
-      sPCsel = r$cpcaSelectedDF %>% slice(1:8),
-      sPCord = r$cpcaOrderedDF  %>% slice(1:8))  %>%
+list( probe  = loss$probeSelectedDF     %>% slice(1:8),
+      PCsel  = loss$vpcaSelectedDF       %>% slice(1:8),
+      PCord  = loss$vpcaOrderedDF        %>% slice(1:8),
+      sPCsel = loss$cpcaSelectedDF %>% slice(1:8),
+      sPCord = loss$cpcaOrderedDF  %>% slice(1:8))  %>%
   plot_method_comparison(outloss) +
   ggtitle("Features 1 to 8") +
   theme( legend.position = "none" ) -> p2
