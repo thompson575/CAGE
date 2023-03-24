@@ -1,7 +1,7 @@
 ---
 title: 'CAGE: Check Data'
 author: "John Thompson"
-date: "21st March 2023"
+date: "21 March 2023"
 output: 
   html_document:
     theme: cerulean
@@ -19,10 +19,6 @@ knitr::opts_chunk$set(echo = FALSE,
                       fig.align = "center",
                       message=FALSE)
 ```
-
-## Background
-
-Read raw data with script read_data.R.
 
 ## Warning Messages
 

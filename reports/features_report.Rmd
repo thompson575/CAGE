@@ -1,35 +1,37 @@
 ---
 title: 'CAGE: Feature Selection'
 author: "John Thompson"
-date: "2023-02-17"
+date: "21st March 2023"
 output: 
-  html_document:
-    theme: cerulean
+    prettydoc::html_pretty:
+      theme: hpstr
 ---
 
 ```{r setup, include=FALSE}
+# --- theme hpstr requires  R package prettydoc
 library(tidyverse)
+library(fs)
+library(ggthemes)
 
-home <- "C:/Projects/RCourse/Masterclass/CAGE"
+# --- source display functions
+code <- "C:/Projects/RCourse/Masterclass/CAGE/code"
+source(path(code, "display_functions.R") )
 
-source( file.path(home, "code/display_functions.R") )
+# --- read data
+cache <- "C:/Projects/RCourse/Masterclass/CAGE/data/cache"
+loss <- readRDS(path(cache, "feature_loss.rds"))
 
-# ---------------------------------------------
-# Named list of results containing
-# probeUniDF, probeSelectedDF,
-# pcaUniDF, pcaSelectedDF, pcaOrderedDF, 
-# pcaScaledUniDF, pcaScaledSelectedDF, pcaScaledOrderedDF, 
-#
-  
-readRDS( file.path(home, "data/cache/feature_loss.rds")) -> loss
-
+# --- chunk options
 knitr::opts_chunk$set(echo = FALSE, fig.align = "center",
                       message=FALSE)
+
+# --- plotting theme from ggthemes
+theme_set(theme_economist())
 ```
 
 ## CAGE
 
-CAGE (Classification After Gene Expression) explores ways of selecting features from a gene expression study for patient classification. In particular, it investigates the pros and cons of basing the classification on the principal components of the gene expression.
+CAGE (Classification After Gene Expression) explores ways of selecting features from a gene expression study for use in patient classification. In particular, it investigates the pros and cons of basing the classification on the principal components of the gene expression.
 
 ## Feature Selection Methods
 
@@ -57,7 +59,7 @@ The training data are used to define the principal component, make the selection
 
 ## M most Predictive Probes
 
-Figure 1 shows the loss when sets of M probes are used to predict cancer in a multivariable logistic regression. The in-sample loss declines steadily as more probes are used, but the out-of-sample loss increases dramatically after a 4 probe model.
+Figure 1 shows the loss when sets of M probes are used to predict cancer in a multivariate logistic regression. The in-sample loss declines steadily as more probes are used, but the out-of-sample loss increases dramatically after a 4 probe model.
 
 ```{r}
 plot_in_out_loss(loss$probeSelectedDF) +
@@ -66,7 +68,7 @@ plot_in_out_loss(loss$probeSelectedDF) +
         x     = "Number of Probes (M)")
 ```
 
-The first 4 selected probes are show below. Here the loss refers to the loss in a univarable logistic regression using only that probe.
+The first 4 selected probes are show below. Here the loss refers to the loss in a univarate logistic regression using only that probe.
 
 ```{r}
 loss$probeUniDF %>%
@@ -191,5 +193,7 @@ The results for scaled and unscaled PCs are very similar.
 ## Issues
 
 * It is possible that the full set of over 21,000 probes will contain probes that are much more predictive. Stronger effects might make the analysis more stable.  
+
 * The relatively small number of patients in AEGIS-1 (n=375) contributes to instability of the principal component analysis. The conclusions might be different for studies in which n is larger.  
+
 * Perhaps it would make sense to restrict PC selection to M from the top R e.g. the best 5 out of the first 20 PCs  

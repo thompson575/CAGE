@@ -1,88 +1,92 @@
 # -----------------------------------------------------------
-# CAGE: Classification After Gene Expression
+# Project CAGE:
 #
-# Analysis of full data from AEGIS-1
+# Analysis of full data from AEGIS-1 
+# using AEGIS-2 for validation
 #
-# Date: 19 Feb 2023
+# Date: 21 March 2023
 #
 library(tidyverse)
 library(glue)
+library(fs)
 library(magrittr)
 
-home <- "C:/Projects/RCourse/Masterclass/CAGE"
-
+# -------------------------------------------------
+# data & code folders
+#
+cache    <- "C:/Projects/RCourse/Masterclass/CAGE/data/cache"
+code     <- "C:/Projects/RCourse/Masterclass/CAGE/code"
 # -------------------------------------------------
 # dependencies - input files used by this script
 #
-file_EXN <- file.path(home, "data/cache/expression.rds")
-file_PAT <- file.path(home, "data/cache/patients.rds")
-file_CFN <- file.path(home, "code/calculation_functions.R")
+exnRDS <- path(cache, "expression.rds")
+patRDS <- path(cache, "patients.rds")
 
 # -------------------------------------------------
 # targets - output files created by this script
-# vpca .. PCA of covariance,   scale = Ffile_LS1E
+# vpca .. PCA of covariance,   scale = FALSE
 # cpca .. PCA of correlations, scale = TRUE
 #
-file_EA1 <- file.path(home, "data/cache/expression_aegis1.rds")
-file_EA2 <- file.path(home, "data/cache/expression_aegis2.rds")
-file_VPC <- file.path(home, "data/cache/aegis1_vpca.rds")
-file_VS1 <- file.path(home, "data/cache/aegis1_vpca_scores.rds")
-file_VS2 <- file.path(home, "data/cache/aegis2_vpca_scores.rds")
-file_CPC <- file.path(home, "data/cache/aegis1_cpca.rds")
-file_CS1 <- file.path(home, "data/cache/aegis1_cpca_scores.rds")
-file_CS2 <- file.path(home, "data/cache/aegis2_cpca_scores.rds")
-file_LS1 <- file.path(home, "data/cache/aegis1_loss.rds")
-file_LGF <- file.path(home, "data/cache/aegis1_log.txt")
+ae1RDS <- path(cache, "expression_aegis1.rds")
+ae2RDS <- path(cache, "expression_aegis2.rds")
+vpvRDS <- path(cache, "aegis1_vpca.rds")
+vs1RDS <- path(cache, "aegis1_vpca_scores.rds")
+vs2RDS <- path(cache, "aegis2_vpca_scores.rds")
+cpcRDS <- path(cache, "aegis1_cpca.rds")
+cs1RDS <- path(cache, "aegis1_cpca_scores.rds")
+cs2RDS <- path(cache, "aegis2_cpca_scores.rds")
+losRDS <- path(cache, "aegis1_loss.rds")
 
 # --------------------------------------------------
 # Divert warning messages to a log file
 #
-logFile <- file(file_LGF, open = "wt")
-sink(logFile, type = "message")
+lf <- file(path(cache, "aegis1_log.txt"), open = "wt")
+sink(lf, type = "message")
 
 # --------------------------------------------------
-# Source the calculation functions
+# Source the computation functions
 #
-source(file_CFN)
+source(path(code, "calculation_functions.R"))
 
 # --------------------------------------------------
 # Extract class for each patient
 #
-readRDS(file_PAT) %>%
+readRDS(patRDS) %>%
   mutate(class = ifelse(diagnosis == "Cancer", 1, 0)) %>%
   select(id, class) -> classDF
 
 # --------------------------------------------
 # Read AEGIS-1 & AEGIS2 for all 21685 probes
 #
-readRDS(file_EXN) %>%
+readRDS(exnRDS) %>%
   { .[, 1:376] } %>%
   pivot_longer(-ID_REF, names_to = "id", values_to = "expression") %>%
   pivot_wider(names_from = ID_REF, values_from = expression) %T>%
   # --- save expressions for aegis1
-  saveRDS(file_EA1) %>%
+  saveRDS(ae1RDS) %>%
   # --- add class info
   left_join(classDF, by = "id") %>%
   relocate(id, class) -> aegis1DF
 
-readRDS(file_EXN) %>%
+readRDS(exnRDS) %>%
   { .[, c(1, 377:506)] } %>%
   pivot_longer(-ID_REF, names_to = "id", values_to = "expression") %>%
   pivot_wider(names_from = ID_REF, values_from = expression) %T>%
   # --- save expressions for aegis2
-  saveRDS(file_EA2) %>%
+  saveRDS(ae2RDS) %>%
   # --- add class info
   left_join(classDF, by = "id") %>%
   relocate(id, class) -> aegis2DF
 
 # --------------------------------------------
+# Covariance PCA (scale=FALSE)
 # vpca (unscaled) of the aegis1 data
 #
 aegis1DF %>%
   select(-id, -class) %>%
   as.matrix() %>% 
   prcomp() %T>%
-  saveRDS(file_VPC) -> vpca
+  saveRDS(vpvRDS) -> vpca
 
 # --------------------------------------------
 # vpca (unscaled) scores of the AEGIS-1 data
@@ -92,7 +96,7 @@ predict(vpca) %>%
   mutate(id = aegis1DF$id) %>%
   relocate(id) %T>%
   # --- save vpca scores
-  saveRDS(file_VS1) %>%
+  saveRDS(vs1RDS) %>%
   # --- add class info
   left_join(classDF, by = "id") -> vpcaScore1DF
 
@@ -104,18 +108,19 @@ predict(vpca, newdata=aegis2DF) %>%
   mutate(id = aegis2DF$id) %>%
   relocate(id) %T>%
   # --- save vpca scores
-  saveRDS(file_VS2) %>%
+  saveRDS(vs2RDS) %>%
   # --- add class info
   left_join(classDF, by = "id") -> vpcaScore2DF
 
 # --------------------------------------------
+# Correlation PCA (scale=TRUE)
 # cpca (scaled) of the aegis1 data
 #
 aegis1DF %>%
   select(-id, -class) %>%
   as.matrix() %>% 
   prcomp(scale=TRUE) %T>%
-  saveRDS(file_CPC) -> cpca
+  saveRDS(cpcRDS) -> cpca
 # --------------------------------------------
 # cpca (scaled) scores of the AEGIS-1 data
 #
@@ -124,7 +129,7 @@ predict(cpca) %>%
   mutate(id = aegis1DF$id) %>%
   relocate(id) %T>%
   # --- save cpcs scores
-  saveRDS(file_CS1) %>%
+  saveRDS(cs1RDS) %>%
   # --- add class info
   left_join(classDF, by = "id") -> cpcaScore1DF
 
@@ -136,7 +141,7 @@ predict(cpca, newdata=aegis2DF) %>%
   mutate(id = aegis2DF$id) %>%
   relocate(id) %T>%
   # --- save cpcs scores
-  saveRDS(file_CS2) %>%
+  saveRDS(cs2RDS) %>%
   # --- add class info
   left_join(classDF, by = "id") -> cpcaScore2DF
 
@@ -167,6 +172,7 @@ probeUniDF %>%
 pcaNames <- glue("PC{1:375}")
 
 # ------------------------------------------------
+# Covariance PCA (scale=FALSE)
 # Loss from univariate logistic regressions
 #
 univariate_logistic(vpcaScore1DF, 
@@ -191,6 +197,7 @@ vpcaUniDF %>%
                     "class")      -> vpcaOrderedDF
 
 # ------------------------------------------------
+# Correlation PCA (scale=TRUE)
 # Loss from univariate logistic regressions
 #
 univariate_logistic(cpcaScore1DF, 
@@ -225,10 +232,10 @@ list(probeUniDF      = probeUniDF,
      cpcaUniDF       = cpcaUniDF, 
      cpcaSelectedDF  = cpcaSelectedDF, 
      cpcaOrderedDF   = cpcaOrderedDF) %>%
-   saveRDS(file_LS1)
+   saveRDS(losRDS)
 
 # -----------------------------------------------
 # Close the log file
 #
 sink(type = "message") 
-close(logFile)
+close(lf)

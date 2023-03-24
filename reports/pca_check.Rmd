@@ -1,53 +1,50 @@
 ---
 title: 'CAGE: Check PCA'
 author: "John Thompson"
-date: "2023-02-17"
+date: "29 March 2023"
 output: 
   html_document:
-    theme: cerulean
+    toc: true
+    theme: journal
 ---
 
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(glue)
+library(fs)
 
-home <- "C:/Projects/RCourse/Masterclass/CAGE"
+# --- source display functions
+code  <- "C:/Projects/RCourse/Masterclass/CAGE/code"
+source(path(code, "display_functions.R"))
 
-source(file.path(home, "code/display_functions.R"))
+# --- cache folder
+cache <- "C:/Projects/RCourse/Masterclass/CAGE/data/cache"
 
-# --- file names
-file_VAL <- file.path(home, "data/cache/validation.rds")
-file_TRN <- file.path(home, "data/cache/training.rds")
-file_PAT <- file.path(home, "data/cache/patients.rds")
-file_VPC <- file.path(home, "data/cache/train_vpca.rds")
-file_VST <- file.path(home, "data/cache/train_vpca_scores.rds")
-file_VSV <- file.path(home, "data/cache/valid_vpca_scores.rds")
-file_CPC <- file.path(home, "data/cache/train_cpca.rds")
-file_CST <- file.path(home, "data/cache/train_cpca_scores.rds")
-file_CSV <- file.path(home, "data/cache/valid_cpca_scores.rds")
-file_LGF <- file.path(home, "data/cache/pca_log.txt")
+# --- read patient data
+patientDF <- readRDS(path(cache, "patients.rds"))
 
+# --- chunk options
 knitr::opts_chunk$set(echo = TRUE, 
                       fig.align = "center",
                       message=FALSE)
-# --- read patient data
-patientDF <- readRDS(file_PAT)
+# --- plotting theme
+theme_set(theme_bw())
 ```
 
 ## Background
 
-PCA of the 1000 probe subset of the expression data.
+PCA of the 1000 probe subset of the expression data with script pca.R.
 
 ## Warning Messages
 
 ```{r}
-readLines(file_LGF)
+readLines(path(cache, "pca_log.txt"))
 ```
 
 ## Unscaled PCA
 
 ```{r}
-vpca <- readRDS(file_VPC)
+vpca <- readRDS(path(cache, "train_vpca.rds"))
 
 # ---------------------------------------------
 # Principal Components Stdev (root eigenvalues)
@@ -59,7 +56,7 @@ plot_eigenvalues(vpca$sdev) +
 ## Unscaled PCA scores training data
 
 ```{r}
-readRDS(file_VST) %>%
+readRDS(path(cache, "train_vpca_scores.rds")) %>%
   print() -> vScoreTrainDF
 # ---------------------------------------------
 # Illustrative plot of first 5 PCs by diagnosis
@@ -76,7 +73,7 @@ glue("PC{1:5}") %>%
 ## Unscaled PCA scores validation Data
 
 ```{r}
-readRDS(file_VSV) %>%
+readRDS(path(cache, "valid_vpca_scores.rds")) %>%
   print() -> vScoreValidDF
 
 # ---------------------------------------------
@@ -94,7 +91,7 @@ glue("PC{1:5}") %>%
 ## Scaled PCA
 
 ```{r}
-cpca <- readRDS(file_CPC)
+cpca <- readRDS(path(cache, "train_cpca.rds"))
 
 # ---------------------------------------------
 # Principal Components Stdev (root eigenvalues)
@@ -106,7 +103,7 @@ plot_eigenvalues(cpca$sdev) +
 ## Scaled PCA scores training data
 
 ```{r}
-readRDS(file_CST) %>%
+readRDS(path(cache, "train_cpca_scores.rds")) %>%
   print() -> cScoreTrainDF
 # ---------------------------------------------
 # Illustrative plot of first 5 PCs by diagnosis
@@ -123,7 +120,7 @@ glue("PC{1:5}") %>%
 ## Scaled PCA scores validation Data
 
 ```{r}
-readRDS(file_CSV) %>%
+readRDS(path(cache, "valid_cpca_scores.rds")) %>%
   print() -> cScoreValidDF
 
 # ---------------------------------------------

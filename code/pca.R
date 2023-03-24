@@ -2,106 +2,108 @@
 # Project CAGE
 # Principal Component Analysis of 1000 Probes
 #
-# Date: 19 Feb 2023
+# Date: 21 March 2023
 #
 # -----------------------------------------------------------
 library(tidyverse)
+library(fs)
 
-home <- "C:/Projects/RCourse/Masterclass/CAGE/"
-
+# -------------------------------------------------
+# data folder
+#
+cache    <- "C:/Projects/RCourse/Masterclass/CAGE/data/cache"
 # -------------------------------------------------
 # dependencies - input files used by this script
 #
-file_VAL <- file.path(home, "data/cache/validation.rds")
-file_TRN <- file.path(home, "data/cache/training.rds")
-file_PAT <- file.path(home, "data/cache/patients.rds")
+valRDS <- path(cache, "validation.rds")
+trnRDS <- path(cache, "training.rds")
+patRDS <- path(cache, "patients.rds")
 
 # -------------------------------------------------
 # targets - output files created by this script
 # vpca .. PCA of covariance, scale = FALSE
 # cpca .. PCA of correlations, scale = TRUE
 #
-file_VPC <- file.path(home, "data/cache/train_vpca.rds")
-file_VST <- file.path(home, "data/cache/train_vpca_scores.rds")
-file_VSV <- file.path(home, "data/cache/valid_vpca_scores.rds")
-file_CPC <- file.path(home, "data/cache/train_cpca.rds")
-file_CST <- file.path(home, "data/cache/train_cpca_scores.rds")
-file_CSV <- file.path(home, "data/cache/valid_cpca_scores.rds")
-file_LGF <- file.path(home, "data/cache/pca_log.txt")
+vpcRDS <- path(cache, "train_vpca.rds")
+vstRDS <- path(cache, "train_vpca_scores.rds")
+vsvRDS <- path(cache, "valid_vpca_scores.rds")
+cpcRDS <- path(cache, "train_cpca.rds")
+cstRDS <- path(cache, "train_cpca_scores.rds")
+csvRDS <- path(cache, "valid_cpca_scores.rds")
 
 # --------------------------------------------------
 # Divert warning messages to a log file
 #
-logFile <- file(file_LGF, open = "wt")
-sink(logFile, type = "message")
+lf <- file(path(cache, "pca_log.txt"), open = "wt")
+sink(lf, type = "message")
 
 # --------------------------------------------
 # Read data on 1000 probes
 #
-validDF   <- readRDS(file_VAL)
-trainDF   <- readRDS(file_TRN)
-patientDF <- readRDS(file_PAT)
+validDF   <- readRDS(valRDS)
+trainDF   <- readRDS(trnRDS)
+patientDF <- readRDS(patRDS)
 
 # --------------------------------------------
-# covariance pca of the training data
+# vpca = covariance PCA of the training data
 #
 trainDF %>%
   select(-id) %>%
   as.matrix() %>% 
   prcomp(scale = FALSE) %>%
-  saveRDS(file_VPC) 
+  saveRDS(vpcRDS) 
 
 # --------------------------------------------
 # vpca scores of the training data
 #
-readRDS(file_VPC) %>%
+readRDS(vpcRDS) %>%
   predict() %>%
   as_tibble() %>%
   mutate(id = trainDF$id) %>%
   relocate(id) %>%
-  saveRDS(file_VST) 
+  saveRDS(vstRDS) 
 
 # --------------------------------------------
 # vpca scores of the validation data
 #
-readRDS(file_VPC) %>%
+readRDS(vpcRDS) %>%
   predict(newdata = validDF) %>%
   as_tibble() %>%
   mutate(id = validDF$id) %>%
   relocate(id) %>%
-  saveRDS(file_VSV) 
+  saveRDS(vsvRDS) 
 
 # --------------------------------------------
-# correlation pca of the training data
+# cpca = correlation PCA of the training data
 #
 trainDF %>%
   select(-id) %>%
   as.matrix() %>% 
   prcomp(scale = TRUE) %>%
-  saveRDS(file_CPC) 
+  saveRDS(cpcRDS) 
 
 # --------------------------------------------
-# pca scores of the training data
+# cpca scores of the training data
 #
-readRDS(file_CPC) %>%
+readRDS(cpcRDS) %>%
   predict() %>%
   as_tibble() %>%
   mutate(id = trainDF$id) %>%
   relocate(id) %>%
-  saveRDS(file_CST) 
+  saveRDS(cstRDS) 
 
 # --------------------------------------------
-# pca scores of the validation data
+# cpca scores of the validation data
 #
-readRDS(file_CPC) %>%
+readRDS(cpcRDS) %>%
   predict(newdata = validDF) %>%
   as_tibble() %>%
   mutate(id = validDF$id) %>%
   relocate(id) %>%
-  saveRDS(file_CSV) 
+  saveRDS(csvRDS) 
 
 # -----------------------------------------------
 # Close the log file
 #
 sink(type = "message") 
-close(logFile)
+close(lf)

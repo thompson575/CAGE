@@ -1,5 +1,5 @@
 ---
-title: Feature Extraction and Selection with Microarray data
+title: Feature Extraction and Selection for Microarray data
 author:
   - name: John Thompson
     email: trj@le.ac.uk
@@ -22,31 +22,41 @@ csl: http://www.zotero.org/styles/plos
 
 # Introduction
 
-Principal component analysis @jolliffe2005principal is widely used for feature extraction and dimensionality reduction song2010feature. However, several authors have questioned this practice @cheriyadat2003principal.
+The advent of high-throughput technologies has revolutionized the field of molecular biology, allowing for the simultaneous measurement of the expression levels of thousands of genes. Gene expression data contains valuable information about the underlying biological processes and can provide insights into the mechanisms of diseases. However, analyzing this data can be challenging due to its high dimensionality and noisy nature. Feature extraction techniques such as principal component analysis (PCA) can help overcome these challenges by reducing the dimensionality of the data and identifying the most relevant features.
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set( echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.height=4, fig.width=5)
-```
+PCA is a widely used technique for feature extraction from gene expression data. It works by identifying the principal components of the data, which are linear combinations of the original variables that capture the maximum amount of variance in the data. By retaining only the top principal components, PCA can effectively reduce the dimensionality of the data while preserving the most important information.
 
-```{r }
+Several studies have shown the effectiveness of PCA for feature extraction from gene expression data. For example, PCA has been used to identify gene expression patterns associated with cancer subtypes @cancer2012comprehensive, to identify differentially expressed genes in response to drug treatments @zhang2014network, and to classify patients based on their gene expression profiles @alizadeh2000distinct.
+
+However, there are also limitations to using PCA for feature extraction from gene expression data. One challenge is interpreting the principal components, as they are often complex linear combinations of many genes. Additionally, PCA assumes that the data is normally distributed and linearly related, which may not always hold true for gene expression data.
+
+In this research article, we investigate the effectiveness of PCA for feature extraction from gene expression data, exploring its strengths and limitations. We apply PCA to several gene expression datasets and evaluate its performance in terms of classification accuracy, interpretability, and computational efficiency. We also compare PCA to other feature extraction techniques and discuss the implications of our findings for the analysis of gene expression data.
+
+```{r include=FALSE}
 library(tidyverse)
+library(fs)
 library(patchwork)
 library(knitr)
 
+code <- "C:/Projects/RCourse/Masterclass/CAGE/code"
+source(path(code, "display_functions.R"))
+
+# --- read data
+cache <- "C:/Projects/RCourse/Masterclass/CAGE/data/cache"
+patientDF <- readRDS(path(cache, "patients.rds") )
+loss      <- readRDS(path(cache, "aegis1_loss.rds"))
+
+# --- chunk options
+knitr::opts_chunk$set( echo=FALSE, message=FALSE, 
+                       warning=FALSE, fig.align='center',
+                       fig.height=4, fig.width=5)
+
 theme_set(theme_light())
-
-home <- "C:/Projects/RCourse/Masterclass/CAGE/"
-
-source(file.path(home, "code/display_functions.R"))
-
-patientDF  <- readRDS( file.path(home, "data/cache/patients.rds") )
-
-loss <- readRDS(file.path(home, "data/cache/aegis1_loss.rds"))
 ```
 
-# Mehtods
+# Methods
 
-This project investigates the pros and cons of basing the classification on the principal components of the gene expression. @xu2022smoking by comparing five strategies
+This project investigates the pros and cons of basing the classification on the principal components of the gene expression. Data from @xu2022smoking are used to compare five strategies
 
 * sets of the M most predictive probes in univariate logistic regression  
 * sets of the M most predictive unscaled PCs in univariate logistic regression  

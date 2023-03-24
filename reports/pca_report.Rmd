@@ -1,54 +1,51 @@
 ---
-title: 'CAGE: PCA of a Subset of the Data'
+title: 'CAGE: PCA of 1000 Probes'
 author: "John Thompson"
-date: "2023-02-17"
+date: "21st March 2023"
 output: 
-  html_document:
-    theme: cerulean
+    prettydoc::html_pretty:
+      theme: architect
 ---
 
 ```{r setup, include=FALSE}
+# --- theme architect requires  R package prettydoc
 library(tidyverse)
 library(glue)
+library(fs)
 
-home <- "C:/Projects/RCourse/Masterclass/CAGE"
+# --- display functions
+code  <- "C:/Projects/RCourse/Masterclass/CAGE/code"
+source(path(code, "display_functions.R"))
 
-source( file.path(home, "code/display_functions.R") )
+# --- read data from cache
+cache <- "C:/Projects/RCourse/Masterclass/CAGE/data/cache"
 
-# --- file names
-file_VAL <- file.path(home, "data/cache/validation.rds")
-file_TRN <- file.path(home, "data/cache/training.rds")
-file_PAT <- file.path(home, "data/cache/patients.rds")
-file_VPC <- file.path(home, "data/cache/train_vpca.rds")
-file_VST <- file.path(home, "data/cache/train_vpca_scores.rds")
-file_VSV <- file.path(home, "data/cache/valid_vpca_scores.rds")
-file_CPC <- file.path(home, "data/cache/train_cpca.rds")
-file_CST <- file.path(home, "data/cache/train_cpca_scores.rds")
-file_CSV <- file.path(home, "data/cache/valid_cpca_scores.rds")
+patientDF     <- readRDS(path(cache, "patients.rds"))
+trainDF       <- readRDS(path(cache, "training.rds"))
+validDF       <- readRDS(path(cache, "validation.rds"))
+vpca          <- readRDS(path(cache, "train_vpca.rds"))
+vScoreTrainDF <- readRDS(path(cache, "train_vpca_scores.rds"))
+vScoreValidDF <- readRDS(path(cache, "valid_vpca_scores.rds"))
+cpca          <- readRDS(path(cache, "train_cpca.rds"))
+cScoreTrainDF <- readRDS(path(cache, "train_cpca_scores.rds"))
+cScoreValidDF <- readRDS(path(cache, "valid_cpca_scores.rds"))
 
-patientDF     <- readRDS(file_PAT)
-trainDF       <- readRDS(file_TRN)
-validDF       <- readRDS(file_VAL)
-vpca          <- readRDS(file_VPC)
-vScoreTrainDF <- readRDS(file_VST)
-vScoreValidDF <- readRDS(file_VSV)
-cpca          <- readRDS(file_CPC)
-cScoreTrainDF <- readRDS(file_CST)
-cScoreValidDF <- readRDS(file_CSV)
-
-
+# --- chunk options
 knitr::opts_chunk$set(echo = FALSE, 
                       fig.align = "center",
                       message=FALSE)
+
+# --- plotting theme
+theme_set(theme_classic())
 ```
 
 ## CAGE
 
-CAGE (Classification After Gene Expression) explores ways of selecting features from a gene expression study for patient classification. In particular, it investigates the pros and cons of basing the classification on the principal components of the gene expression.
+CAGE (Classification After Gene Expression) explores ways of selecting features from a gene expression study for use in patient classification. In particular, it investigates the pros and cons of basing the classification on the principal components of the gene expression.
 
 ## 1000 Probe Subset of the Data
 
-A random sample of 1000 probes was used to create a subset of the data that would enable quicker development of the code to investigate feature selection. The training data consist of the 1000 probes measured on the patients from AEGIS-1 and the validation data consist of the same probes measured on the patients from AEGIS-2.
+A random sample of 1000 probes was used to create a subset of the data that would enable quicker development of the code. The training data consist of the 1000 probes measured on the patients from AEGIS-1 and the validation data consist of the same probes measured on the patients from AEGIS-2.
 
 This report looks at the principal component analysis (PCA) of the training data.
 
@@ -61,7 +58,7 @@ plot_eigenvalues(vpca$sdev[1:50], pct = TRUE ) +
   ggtitle("Fig 1: Percent Explained by the Unscaled PCs")
 ```
 
-A table of the cumulative percentage of the variance explained by the first 20 PCs shows that just 3 principal components captures over 50% of the variance in the expressions.
+A table of the cumulative percentage of the variance explained by the first 20 PCs shows that the first three principal components capture over 50% of the variance in the expressions.
 ```{r}
 tibble( pc = 1:375,
         sd = vpca$sdev) %>%
@@ -151,5 +148,6 @@ It is not clear which analysis will be most stable, or which will better capture
 
 ## Issues
 
-* PCA is sensitive to outliers and there are some quite extreme values in the data. Perhaps the scaled analysis will be less sentitive to outliers.  
+* PCA is sensitive to outliers and there are some quite extreme values in the data. Perhaps the scaled analysis will be less sensitive to outliers.  
 
+* PCs are linear and independent. The relationships of the probes with diagnosis might well be non-linear and interacting.

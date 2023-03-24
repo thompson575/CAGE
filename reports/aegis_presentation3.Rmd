@@ -1,7 +1,7 @@
 ---
 title: "Feature Extraction and Selection  \n with Microarray Data"
 author: "John Thompson"
-date: "2023-03-29"
+date: "29 March 2023"
 output: 
   beamer_presentation:
     theme: "Berkeley"
@@ -9,21 +9,22 @@ output:
     fonttheme: "structurebold"
 ---
 
-```{r setup, include=FALSE}
+```{r include=FALSE}
+library(tidyverse)
+library(fs)
+
+code <- "C:/Projects/RCourse/Masterclass/CAGE/code"
+source(path(code, "display_functions.R"))
+
+# --- read data
+cache <- "C:/Projects/RCourse/Masterclass/CAGE/data/cache"
+patientDF <- readRDS(path(cache, "patients.rds") )
+loss      <- readRDS(path(cache, "aegis1_loss.rds"))
+
+# --- chunk options
 knitr::opts_chunk$set( echo=FALSE, message=FALSE, 
                        warning=FALSE, fig.align='center')
-```
 
-```{r }
-library(tidyverse)
-
-home <- "C:/Projects/RCourse/Masterclass/CAGE/"
-
-source(file.path(home, "code/display_functions.R"))
-
-patientDF  <- readRDS( file.path(home, "data/cache/patients.rds") )
-
-loss <- readRDS(file.path(home, "data/cache/aegis1_loss.rds"))
 ```
 
 ## Extraction and Selection

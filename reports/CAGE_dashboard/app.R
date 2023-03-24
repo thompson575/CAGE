@@ -1,58 +1,56 @@
+# -----------------------------------------------------------
+# Project CAGE: 
+# dashboard for exploration of the 1000 probe training data
 #
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 library(shiny)
 library(tidyverse)
+library(fs)
 
 # Read the training data
-
-home <- "C:/Projects/RCourse/Masterclass/CAGE"
-
-patientDF  <- readRDS( file.path(home, "data/cache/patients.rds") )
-
-trainDF <- readRDS( file.path(home, "data/cache/training.rds"))
+cache <- "C:/Projects/RCourse/Masterclass/CAGE/data/cache"
+patientDF <- readRDS(path(cache, "patients.rds") )
+trainDF   <- readRDS(path(cache, "training.rds"))
 
 # names of the 1000 probes
 probes <- names(trainDF)[-1]
 
+# combine training and patient data
 trainDF %>%
   left_join(patientDF, by = "id") -> trainDF
 
-# proportion of Cancer cases in AEGIS-1
+# proportion of Cancer cases in training data
 pC <- sum(trainDF$diagnosis == "Cancer") / nrow(trainDF)
 
-
-# Define UI: histograms & plots proportions
+# --------------------------------------------------
+# Define UI:
+#
 ui <- fluidPage(
 
     # Application title
     titlePanel("CAGE: 1000 Probes from AEGIS-1"),
 
-    # Sidebar with a slider input for number of bins 
     sidebarLayout(
-        sidebarPanel(
-            selectInput("select", h3("Probe"), 
-                        choices = probes, 
-                        selected = probes[1])
-        ),
+      # Sidebar with probe selector 
+      sidebarPanel(
+        selectInput("select", 
+                    h3("Probe"), 
+                    choices  = probes, 
+                    selected = probes[1])
+      ),
 
-        # Show a plot of the generated distribution
-        mainPanel(
+      # Main panel containing the plots
+      mainPanel(
            plotOutput("distPlot"),
            plotOutput("propPlot")
         )
     )
 )
 
-# Define server logic required to draw a histogram
+# --------------------------------------------------
+# Define server 
+#
 server <- function(input, output) {
-
+    # Histogram of expression faceted by diagnosis
     output$distPlot <- renderPlot({
       tibble( diagnosis = trainDF$diagnosis,
               probe     = trainDF[[input$select]] ) %>%
@@ -61,14 +59,15 @@ server <- function(input, output) {
         facet_grid( diagnosis ~ .) +
         labs( x = "Expression")
     })
-    
+    # Plot of the proportion of cancer cases
     output$propPlot <- renderPlot({
        tibble( diagnosis = trainDF$diagnosis,
                x         = trainDF[[input$select]],
                cat       = cut(x,
                                breaks = quantile(x,
                                                  probs = seq(0, 1, 0.1)), 
-                                include.lowest = TRUE, labels = 1:10) ) %>%
+                               include.lowest = TRUE, 
+                               labels = 1:10) ) %>%
         group_by( cat ) %>%
         summarise( n = n(),
                 c = sum( diagnosis == "Cancer"),
@@ -85,5 +84,7 @@ server <- function(input, output) {
     })
 }
 
+# --------------------------------------------------
 # Run the application 
+#
 shinyApp(ui = ui, server = server)

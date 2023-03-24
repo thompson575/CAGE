@@ -1,64 +1,56 @@
 ---
-title: 'CAGE: Check AEGIS1 ANALYSIS'
+title: 'CAGE: Check AEGIS1 analysis'
 author: "John Thompson"
-date: "2023-02-17"
+date: "2023-03-29"
 output: 
-  html_document:
-    theme: cerulean
+    prettydoc::html_pretty:
+      toc: true
+      theme: tactile
 ---
 
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(glue)
+library(fs)
+library(ggthemes)
 
-home <- "C:/Projects/RCourse/Masterclass/CAGE"
+cache <- "C:/Projects/RCourse/Masterclass/CAGE/data/cache"
 
-# -------------------------------------------------
-# dependencies - input files used by this script
-#
-file_EXN <- file.path(home, "data/cache/expression.rds")
-file_PAT <- file.path(home, "data/cache/patients.rds")
-file_DFN <- file.path(home, "code/display_functions.R")
-file_EA1 <- file.path(home, "data/cache/expression_aegis1.rds")
-file_EA2 <- file.path(home, "data/cache/expression_aegis2.rds")
-file_VPC <- file.path(home, "data/cache/aegis1_vpca.rds")
-file_VS1 <- file.path(home, "data/cache/aegis1_vpca_scores.rds")
-file_VS2 <- file.path(home, "data/cache/aegis2_vpca_scores.rds")
-file_CPC <- file.path(home, "data/cache/aegis1_cpca.rds")
-file_CS1 <- file.path(home, "data/cache/aegis1_cpca_scores.rds")
-file_CS2 <- file.path(home, "data/cache/aegis2_cpca_scores.rds")
-file_LS1 <- file.path(home, "data/cache/aegis1_loss.rds")
-file_LGF <- file.path(home, "data/cache/aegis1_log.txt")
+# --- source display functions
+code <- "C:/Projects/RCourse/Masterclass/CAGE/code"
+source(path(code, "display_functions.R"))
 
-source(file_DFN)
+# --- read data from cache
+cache <- "C:/Projects/RCourse/Masterclass/CAGE/data/cache"
+readRDS(path(cache, "patients.rds")) %>%
+  mutate(class = ifelse(diagnosis == "Cancer", 1, 0)) %>% 
+  select(id, diagnosis, class) -> classDF
+  
+
+readRDS(path(cache, "aegis1_loss.rds")) -> loss
 
 
 knitr::opts_chunk$set(echo = TRUE, 
                       fig.align = "center",
                       message=FALSE)
 
-readRDS(file_PAT) %>%
-  mutate(class = ifelse(diagnosis == "Cancer", 1, 0)) %>% 
-  select(id, diagnosis, class) -> classDF
-  
-
-readRDS(file_LS1) -> loss
+theme_set(theme_stata())
 ```
 
 ## Background
 
-PCA of the 1000 probe subset of the expression data.
+Results for feature selection from the full set of probes taken from aegis1.R
 
 ## Warning Messages
 
 ```{r}
-readLines(file_LGF)
+readLines(path(cache, "aegis1_log.txt"))
 ```
 
 ## Unscaled PCA
 
 ```{r}
-vpca <- readRDS(file_VPC)
+vpca <- readRDS(path(cache, "aegis1_vpca.rds"))
 
 # ---------------------------------------------
 # Principal Components Stdev (root eigenvalues)
@@ -70,7 +62,7 @@ plot_eigenvalues(vpca$sdev) +
 ## Unscaled PCA scores training data
 
 ```{r}
-readRDS(file_VS1) %>%
+readRDS(path(cache, "aegis1_vpca_scores.rds")) %>%
   print() -> vScoreTrainDF
 # ---------------------------------------------
 # Illustrative plot of first 5 PCs by diagnosis
@@ -87,7 +79,7 @@ glue("PC{1:5}") %>%
 ## Unscaled PCA scores validation Data
 
 ```{r}
-readRDS(file_VS2) %>%
+readRDS(path(cache, "aegis2_vpca_scores.rds")) %>%
   print() -> vScoreValidDF
 
 # ---------------------------------------------
@@ -105,7 +97,7 @@ glue("PC{1:5}") %>%
 ## Scaled PCA
 
 ```{r}
-cpca <- readRDS(file_CPC)
+cpca <- readRDS(path(cache, "aegis1_cpca.rds"))
 
 # ---------------------------------------------
 # Principal Components Stdev (root eigenvalues)
@@ -117,7 +109,7 @@ plot_eigenvalues(cpca$sdev) +
 ## Scaled PCA scores training data
 
 ```{r}
-readRDS(file_CS1) %>%
+readRDS(path(cache, "aegis1_cpca_scores.rds")) %>%
   print() -> cScoreTrainDF
 # ---------------------------------------------
 # Illustrative plot of first 5 PCs by diagnosis
@@ -134,7 +126,7 @@ glue("PC{1:5}") %>%
 ## Scaled PCA scores validation Data
 
 ```{r}
-readRDS(file_CS2) %>%
+readRDS(path(cache, "aegis2_cpca_scores.rds")) %>%
   print() -> cScoreValidDF
 
 # ---------------------------------------------

@@ -1,42 +1,39 @@
 ---
 title: 'CAGE: Check Feature Selection'
 author: "John Thompson"
-date: "2023-02-17"
+date: "2023-03-29"
 output: 
-  html_document:
-    theme: cerulean
+    prettydoc::html_pretty:
+      theme: cayman
 ---
 
 ```{r setup, include=FALSE}
+# --- theme cayman requires  R package prettydoc
 library(tidyverse)
 library(glue)
+library(fs)
 
-home <- "C:/Projects/RCourse/Masterclass/CAGE"
+# --- cache results from features.R
+cache <- "C:/Projects/RCourse/Masterclass/CAGE/data/cache"
+loss <- readRDS(path(cache, "feature_loss.rds")) 
 
-# -------------------------------------------------
-# dependencies - input files used by this script
-#
-file_FLS <- file.path(home, "data/cache/feature_loss.rds")
-file_LGF <- file.path(home, "data/cache/features_log.txt")
-
+# --- chunk options
 knitr::opts_chunk$set(echo = TRUE, 
                       fig.align = "center",
                       message=FALSE)
-
-readRDS(file_FLS) -> loss
 ```
 
 ## Background
 
-PCA of the 1000 probe subset of the expression data.
+Feature selection results from features.R
 
 ## Warning Messages
 
 ```{r}
-readLines(file_LGF)
+readLines(path(cache, "features_log.txt"))
 ```
 
-## Best Probes
+## Method 1: Most Predictive Probes
 
 ```{r}
 loss$probeUniDF %>%
@@ -50,7 +47,7 @@ print(loss$probeSelectedDF)
 ```
 
 
-## Unscaled PCA: Most Predictive PCs
+## Method 2: Most Predictive Unscaled PCs
 
 ```{r}
 loss$vpcaUniDF %>%
@@ -67,14 +64,14 @@ loss$vpcaOrderedDF %>%
   print()
 ```
 
-## Unscaled PCA: First PCs
+## Method 3: First Unscaled PCs
 
 ```{r}
 loss$vpcaOrderedDF %>%
   print()
 ```
 
-## Scaled PCA: Most Predictive PCs
+## Method 4: Most Predictive Scaled PCs
 
 ```{r}
 loss$cpcaUniDF %>%
@@ -86,7 +83,7 @@ loss$cpcaSelectedDF %>%
   print()
 ```
 
-## Scaled PCA: First PCs
+## Method 5: First Scaled PCs
 
 ```{r}
 loss$cpcaOrderedDF %>%
